@@ -1,0 +1,54 @@
+{
+  "processos": [
+    {
+      "id": "1",
+      "numero": "0001234-88.2026.8.15.0001",
+      "cliente": "Maria Silva",
+      "whatsapp": "5583999999999",
+      "urgencia": "Médio",
+      "status": "Citado / Aguardando Prazo",
+      "historico": [
+        {
+          "data": "01/11/2026",
+          "movimentacao": "Certifico que o mandado foi cumprido positivo, com citação e intimação da parte ré.",
+          "resumoCliente": "O oficial de justiça entregou a notificação para a outra parte com sucesso. Próximo passo: aguardar o prazo de defesa."
+        },
+        {
+          "data": "20/10/2026",
+          "movimentacao": "Recebidos os autos conclusos para despacho inicial.",
+          "resumoCliente": "O juiz recebeu o seu processo e iniciou a análise do pedido inicial."
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "numero": "0004567-12.2026.8.15.0042",
+      "cliente": "João de Souza",
+      "whatsapp": "5583988888888",
+      "urgencia": "Alto",
+      "status": "Sentença Proferida",
+      "historico": [
+        {
+          "data": "02/11/2026",
+          "movimentacao": "Julgado procedente o pedido do autor na sentença.",
+          "resumoCliente": "Temos uma excelente notícia! O juiz deu ganho de causa ao nosso pedido principal na sentença."
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "numero": "0009876-55.2025.8.15.0003",
+      "cliente": "Ana Beatriz Lima",
+      "whatsapp": "5583977777777",
+      "urgencia": "Baixo",
+      "status": "Em Andamento",
+      "historico": [
+        {
+          "data": "15/10/2026",
+          "movimentacao": "Aguardando juntada de AR de carta precatória.",
+          "resumoCliente": "O processo está em trâmite regular aguardando o retorno de diligência de outra comarca."
+        }
+      ]
+    }
+  ]
+}
