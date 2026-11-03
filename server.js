@@ -5,14 +5,12 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const DB_FILE = path.join(__dirname, 'database.json');
+const DB_FILE = path.join('/tmp', 'database.json'); // /tmp é gravável na Vercel
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
-// Inicializar banco de dados JSON com processos fictícios realistas
+// Inicializar banco de dados temporário se não existir
 if (!fs.existsSync(DB_FILE)) {
     const initialData = {
         processos: [
@@ -28,11 +26,6 @@ if (!fs.existsSync(DB_FILE)) {
                         data: "01/11/2026",
                         movimentacao: "Certifico que o mandado foi cumprido positivo, com citação e intimação da parte ré.",
                         resumoCliente: "O oficial de justiça entregou a notificação para a outra parte com sucesso. Próximo passo: aguardar o prazo de defesa."
-                    },
-                    {
-                        data: "20/10/2026",
-                        movimentacao: "Recebidos os autos conclusos para despacho inicial.",
-                        resumoCliente: "O juiz recebeu o seu processo e iniciou a análise do pedido inicial."
                     }
                 ]
             },
@@ -48,21 +41,6 @@ if (!fs.existsSync(DB_FILE)) {
                         data: "02/11/2026",
                         movimentacao: "Julgado procedente o pedido do autor na sentença.",
                         resumoCliente: "Temos uma excelente notícia! O juiz deu ganho de causa ao nosso pedido principal na sentença."
-                    }
-                ]
-            },
-            {
-                id: "3",
-                numero: "0009876-55.2025.8.15.0003",
-                cliente: "Ana Beatriz Lima",
-                whatsapp: "5583977777777",
-                urgencia: "Baixo",
-                status: "Em Andamento",
-                historico: [
-                    {
-                        data: "15/10/2026",
-                        movimentacao: "Aguardando juntada de AR de carta precatória.",
-                        resumoCliente: "O processo está em trâmite regular aguardando o retorno de diligência de outra comarca."
                     }
                 ]
             }
@@ -94,7 +72,7 @@ app.post('/api/processos', (req, res) => {
     let urgencia = "Baixo";
     let status = "Em Andamento";
 
-    const movLower = movimentacao.toLowerCase();
+    const movLower = (movimentacao || "").toLowerCase();
     if (movLower.includes('positivo') || movLower.includes('citado') || movLower.includes('citação')) {
         resumoCliente = "A outra parte foi localizada e notificada oficialmente pela justiça! Agora o processo segue para as próximas etapas.";
         urgencia = "Médio";
@@ -103,10 +81,6 @@ app.post('/api/processos', (req, res) => {
         resumoCliente = "O juiz proferiu uma decisão/sentença sobre o seu caso. Já estamos verificando o teor para conversarmos.";
         urgencia = "Alto";
         status = "Sentença Proferida";
-    } else if (movLower.includes('audiência')) {
-        resumoCliente = "Foi designada uma data de audiência para o seu caso. Entraremos em contato para os alinhamentos.";
-        urgencia = "Alto";
-        status = "Audiência Marcada";
     }
 
     const novaMov = {
@@ -140,6 +114,5 @@ app.post('/api/processos', (req, res) => {
     res.json({ success: true, processo });
 });
 
-app.listen(PORT, () => {
-    console.log(`JurisSync AI v2.1 rodando na porta ${PORT}`);
-});
+// Exportar para a Vercel (Serverless)
+module.exports = app;
