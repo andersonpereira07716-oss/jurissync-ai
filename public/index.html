@@ -3,23 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JurisSync AI - SaaS Enterprise</title>
+    <title>JurisSync AI - Portal Jurídico SaaS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4">
-    <div class="max-w-2xl mx-auto space-y-6">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex items-center justify-center">
+    
+    <!-- ECRÃ DE LOGIN / REGISTO -->
+    <div id="auth-container" class="w-full max-w-md bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
+        <div class="text-center space-y-2">
+            <h1 class="text-2xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
+            <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
+        </div>
+
+        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button onclick="alternarTab('login')" id="tab-login" class="flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all">Entrar</button>
+            <button onclick="alternarTab('registar')" id="tab-registar" class="flex-1 py-2 rounded-lg text-slate-400 transition-all">Criar Conta</button>
+        </div>
+
+        <!-- Formulário de Login -->
+        <div id="form-login" class="space-y-4">
+            <input type="email" id="login-email" placeholder="E-mail do Escritório" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <input type="password" id="login-senha" placeholder="Palavra-passe" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <button onclick="fazerLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Aceder ao Painel</button>
+        </div>
+
+        <!-- Formulário de Registo -->
+        <div id="form-registar" class="space-y-4 hidden">
+            <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Registar Escritório</button>
+        </div>
+    </div>
+
+    <!-- PAINEL PRINCIPAL (Oculto até fazer login) -->
+    <div id="app-container" class="w-full max-w-2xl mx-auto space-y-6 hidden">
         <header class="flex justify-between items-center border-b border-slate-800 pb-4">
             <div>
                 <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-                <p class="text-xs text-slate-400">Plataforma Jurídica Multi-tenant</p>
+                <p id="label-escritorio" class="text-xs text-slate-400 font-medium"></p>
             </div>
-            <div class="flex items-center gap-2">
-                <input type="text" id="tenant-id" value="escritorio_padrao" onchange="carregarProcessos()" class="bg-slate-900 border border-slate-800 text-xs px-2.5 py-1.5 rounded-lg text-emerald-400 font-mono outline-none focus:border-emerald-500 w-36" title="ID do Escritório (Tenant)">
-                <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v4.0 SaaS</span>
-            </div>
+            <button onclick="terminarSessao()" class="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
+                🚪 Sair
+            </button>
         </header>
 
-        <!-- Atalhos Rápidos com Exemplos de Texto -->
+        <!-- Atalhos Rápidos de Teste -->
         <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
             <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">⚡ Preenchimento Rápido (Testes)</span>
             <div class="grid grid-cols-2 gap-2">
@@ -32,7 +61,7 @@
             </div>
         </div>
 
-        <!-- Formulário de Processos -->
+        <!-- Formulário de Gestão -->
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
             <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Gestão & Automação de Processos</h2>
             
@@ -54,10 +83,10 @@
                 🤖 Traduzir Juridiquês com IA para o Cliente
             </button>
 
-            <button onclick="enviarProcesso()" id="btn-salvar" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
+            <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
         </div>
 
-        <!-- Lista de Processos -->
+        <!-- Timeline do Escritório -->
         <div class="space-y-3">
             <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Timeline do Escritório</h3>
             <div id="lista-processos" class="space-y-3"></div>
@@ -65,6 +94,94 @@
     </div>
 
     <script>
+        let tenantAtual = localStorage.getItem('tenant_id') || null;
+        let nomeEscritorioAtual = localStorage.getItem('nome_escritorio') || null;
+
+        if (tenantAtual) {
+            mostrarApp(nomeEscritorioAtual);
+        }
+
+        function alternarTab(tipo) {
+            if (tipo === 'login') {
+                document.getElementById('form-login').classList.remove('hidden');
+                document.getElementById('form-registar').classList.add('hidden');
+                document.getElementById('tab-login').className = 'flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all';
+                document.getElementById('tab-registar').className = 'flex-1 py-2 rounded-lg text-slate-400 transition-all';
+            } else {
+                document.getElementById('form-login').classList.add('hidden');
+                document.getElementById('form-registar').classList.remove('hidden');
+                document.getElementById('tab-registar').className = 'flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all';
+                document.getElementById('tab-login').className = 'flex-1 py-2 rounded-lg text-slate-400 transition-all';
+            }
+        }
+
+        async function fazerRegisto() {
+            const nomeEscritorio = document.getElementById('reg-nome').value;
+            const email = document.getElementById('reg-email').value;
+            const senha = document.getElementById('reg-senha').value;
+
+            if (!nomeEscritorio || !email || !senha) return;
+
+            try {
+                const res = await fetch('/api/auth/registar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nomeEscritorio, email, senha })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('Conta criada com sucesso! Faça login.');
+                    alternarTab('login');
+                } else {
+                    alert(data.error || 'Erro ao registar.');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function fazerLogin() {
+            const email = document.getElementById('login-email').value;
+            const senha = document.getElementById('login-senha').value;
+
+            if (!email || !senha) return;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('tenant_id', data.tenantId);
+                    localStorage.setItem('nome_escritorio', data.nomeEscritorio);
+                    tenantAtual = data.tenantId;
+                    nomeEscritorioAtual = data.nomeEscritorio;
+                    mostrarApp(data.nomeEscritorio);
+                } else {
+                    alert(data.error || 'Credenciais inválidas.');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function mostrarApp(nome) {
+            document.getElementById('auth-container').classList.add('hidden');
+            const app = document.getElementById('app-container');
+            app.classList.remove('hidden');
+            document.body.classList.remove('items-center', 'justify-center');
+            document.getElementById('label-escritorio').innerText = `Escritório: ${nome}`;
+            carregarProcessos();
+        }
+
+        function terminarSessao() {
+            localStorage.removeItem('tenant_id');
+            localStorage.removeItem('nome_escritorio');
+            location.reload();
+        }
+
         function preencherExemplo(tipo) {
             if (tipo === 'sentenca') {
                 document.getElementById('numero').value = '0801929-30.2024.8.15.0251';
@@ -82,7 +199,7 @@
         async function consultarDataJud() {
             const numero = document.getElementById('numero').value;
             const btn = document.getElementById('btn-cnj');
-            if (!numero) { return; }
+            if (!numero) return;
 
             btn.innerText = '⌛...';
             btn.disabled = true;
@@ -107,7 +224,7 @@
         async function traduzirComIA() {
             const texto = document.getElementById('movimentacao').value;
             const btn = document.getElementById('btn-ia');
-            if (!texto) { return; }
+            if (!texto) return;
 
             btn.innerText = '🤖 A traduzir com IA...';
             btn.disabled = true;
@@ -147,9 +264,9 @@
         }
 
         async function carregarProcessos() {
-            const tenantId = document.getElementById('tenant-id').value;
+            if (!tenantAtual) return;
             try {
-                const res = await fetch(`/api/processos?tenantId=${tenantId}`);
+                const res = await fetch(`/api/processos?tenantId=${tenantAtual}`);
                 const dados = await res.json();
                 const container = document.getElementById('lista-processos');
                 container.innerHTML = '';
@@ -198,9 +315,8 @@
             const cliente = document.getElementById('cliente').value;
             const whatsapp = document.getElementById('whatsapp').value;
             const movimentacao = document.getElementById('movimentacao').value;
-            const tenantId = document.getElementById('tenant-id').value;
 
-            if(!numero || !cliente) { return; }
+            if (!numero || !cliente || !tenantAtual) return;
 
             const payload = {
                 id: Date.now().toString(),
@@ -209,7 +325,7 @@
                 whatsapp,
                 urgencia: window.urgenciaTemp || 'Médio',
                 status: 'Atualizado por IA',
-                tenantId,
+                tenantId: tenantAtual,
                 historico: [{ data: new Date().toLocaleDateString(), movimentacao }]
             };
 
@@ -219,7 +335,7 @@
                 body: JSON.stringify(payload)
             });
 
-            if(res.ok) {
+            if (res.ok) {
                 document.getElementById('numero').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('whatsapp').value = '';
@@ -228,8 +344,6 @@
                 carregarProcessos();
             }
         }
-
-        carregarProcessos();
     </script>
 </body>
 </html>

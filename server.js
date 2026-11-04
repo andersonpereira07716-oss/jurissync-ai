@@ -13,79 +13,87 @@ const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqd
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Rota de Gestão de Assinatura e Planos SaaS (Stripe / Asaas Mock)
-app.post('/api/saas/assinar', async (req, res) => {
+// 1. Registo de Novo Escritório (SaaS)
+app.post('/api/auth/registar', async (req, res) => {
     try {
-        const { escritorioId, plano, email } = req.body;
-        
-        if (!escritorioId || !plano) {
-            return res.status(400).json({ error: 'ID do escritório e plano são obrigatórios.' });
+        const { nomeEscritorio, email, senha } = req.body;
+        if (!email || !senha || !nomeEscritorio) {
+            return res.status(400).json({ error: 'Preencha todos os campos.' });
         }
 
-        // Simulação de criação de checkout ou ativação de licença SaaS
-        const planosValidos = {
-            'solo': { limiteProcessos: 50, valor: 'R$ 97/mês' },
-            'escritorio': { limiteProcessos: 300, valor: 'R$ 197/mês' },
-            'enterprise': { limiteProcessos: 9999, valor: 'R$ 497/mês' }
-        };
+        const tenantId = 'esc_' + Math.random().toString(36.substring(2, 9));
 
-        const dadosPlano = planosValidos[plano] || planosValidos['solo'];
+        const { data, error } = await supabase
+            .from('escritorios')
+            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha }]);
 
-        return res.status(200).json({
-            status: 'sucesso',
-            mensagem: `Assinatura do plano ${plano.toUpperCase()} ativada com sucesso!`,
-            detalhes: {
-                escritorioId,
-                email: email || 'advogado@escritorio.com',
-                limiteProcessos: dadosPlano.limiteProcessos,
-                valorMensal: dadosPlano.valor,
-                renovacaoAutomatica: true
-            }
-        });
+        if (error) throw error;
+
+        return res.status(200).json({ status: 'sucesso', tenantId, nomeEscritorio });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
-// 2. Rota de Disparo Automático via API do WhatsApp
+// 2. Login de Escritório
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, senha } = req.body;
+        if (!email || !senha) {
+            return res.status(400).json({ error: 'E-mail e senha obrigatórios.' });
+        }
+
+        const { data, error } = await supabase
+            .from('escritorios')
+            .select('*')
+            .eq('email', email)
+            .eq('senha', senha)
+            .single();
+
+        if (error || !data) {
+            return res.status(401).json({ error: 'Credenciais inválidas.' });
+        }
+
+        return res.status(200).json({
+            status: 'sucesso',
+            tenantId: data.tenant_id,
+            nomeEscritorio: data.nome_escritorio
+        });
+    } catch (err) {
+        return res.status(500).json({ error: 'Erro ao autenticar.' });
+    }
+});
+
+// 3. Rota de Disparo Automático via WhatsApp
 app.post('/api/processos/notificar-whatsapp', async (req, res) => {
     try {
         const { telefone, cliente, numeroProcesso, mensagem } = req.body;
-
-        if (!telefone || !mensagem) {
-            return res.status(400).json({ error: 'Telefone e mensagem são obrigatórios.' });
-        }
+        if (!telefone || !mensagem) return res.status(400).json({ error: 'Dados em falta.' });
 
         const mensagemTexto = `Olá, ${cliente}! Segue a atualização do seu processo nº ${numeroProcesso}:\n\n"${mensagem}"\n\nQualquer dúvida, estamos à disposição!`;
 
         if (WHATSAPP_API_URL && WHATSAPP_API_TOKEN) {
             const apiRes = await fetch(WHATSAPP_API_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': WHATSAPP_API_TOKEN
-                },
+                headers: { 'Content-Type': 'application/json', 'apikey': WHATSAPP_API_TOKEN },
                 body: JSON.stringify({ number: telefone, text: mensagemTexto })
             });
-
-            if (!apiRes.ok) throw new Error(`Falha no Gateway de WhatsApp: status ${apiRes.status}`);
-
-            return res.status(200).json({ status: 'sucesso', modo: 'API_AUTOMATICO', mensagem: 'Mensagem enviada automaticamente!' });
+            if (!apiRes.ok) throw new Error('Erro na API de WhatsApp');
+            return res.status(200).json({ status: 'sucesso', modo: 'API_AUTOMATICO' });
         }
 
         const linkWhats = `https://api.whatsapp.com/send?phone=${telefone}&text=${encodeURIComponent(mensagemTexto)}`;
         return res.status(200).json({ status: 'sucesso', modo: 'DEEP_LINK', link: linkWhats });
-
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
-// 3. Rota de Tradução Inteligente com IA
+// 4. Tradução IA
 app.post('/api/processos/traduzir-ia', async (req, res) => {
     try {
         const { textoTecnico } = req.body;
-        if (!textoTecnico) return res.status(400).json({ error: 'Texto técnico é obrigatório.' });
+        if (!textoTecnico) return res.status(400).json({ error: 'Texto obrigatório.' });
 
         let resumoCliente = "Houve uma nova movimentação importante no seu processo. A nossa equipa jurídica está a acompanhar de perto.";
         let urgenciaCalculada = "Média";
@@ -110,31 +118,24 @@ app.post('/api/processos/traduzir-ia', async (req, res) => {
     }
 });
 
-// 4. Rota de Consulta Automática ao DataJud (CNJ)
+// 5. Consulta DataJud
 app.post('/api/processos/consultar-cnj', async (req, res) => {
     try {
         const { numeroProcesso } = req.body;
         if (!numeroProcesso) return res.status(400).json({ error: 'Número obrigatório.' });
 
         const numeroLimpo = numeroProcesso.replace(/[-.]/g, '');
-
         const cnjResponse = await fetch('https://api-publica.datajud.cnj.jus.br/api_v1_processo/_search', {
             method: 'POST',
-            headers: {
-                'Authorization': DATAJUD_API_KEY,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': DATAJUD_API_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({ query: { match: { "numeroProcesso": numeroLimpo } } })
         });
 
-        if (!cnjResponse.ok) throw new Error(`Erro na API DataJud: status ${cnjResponse.status}`);
-
+        if (!cnjResponse.ok) throw new Error('Erro na API DataJud');
         const cnjData = await cnjResponse.json();
         const hits = cnjData.hits?.hits || [];
 
-        if (hits.length === 0) {
-            return res.status(404).json({ mensagem: 'Nenhum andamento encontrado no DataJud/CNJ.' });
-        }
+        if (hits.length === 0) return res.status(404).json({ mensagem: 'Nenhum andamento encontrado.' });
 
         const dadosProcesso = hits[0]._source;
         const movimentacoes = dadosProcesso.movimentos || [];
@@ -152,38 +153,38 @@ app.post('/api/processos/consultar-cnj', async (req, res) => {
     }
 });
 
-// 5. Rota para salvar ou atualizar processos com Multi-tenancy (tenant_id)
+// 6. Salvar Processos Isolados por Tenant
 app.post('/api/processos', async (req, res) => {
     try {
         const { id, numero, cliente, whatsapp, urgencia, status, historico, tenantId } = req.body;
+        if (!tenantId) return res.status(400).json({ error: 'Tenant ID obrigatório.' });
 
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('processos')
-            .upsert([
-                {
-                    id: id || Date.now().toString(),
-                    numero,
-                    cliente,
-                    whatsapp,
-                    urgencia: urgencia || 'Médio',
-                    status: status || 'Em Andamento',
-                    historico,
-                    tenant_id: tenantId || 'escritorio_padrao',
-                    created_at: new Date().toISOString()
-                }
-            ]);
+            .upsert([{
+                id: id || Date.now().toString(),
+                numero,
+                cliente,
+                whatsapp,
+                urgencia: urgencia || 'Médio',
+                status: status || 'Em Andamento',
+                historico,
+                tenant_id: tenantId,
+                created_at: new Date().toISOString()
+            }]);
 
         if (error) throw error;
-        return res.status(200).json({ status: 'sucesso', mensagem: 'Processo guardado com sucesso!' });
+        return res.status(200).json({ status: 'sucesso' });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
-// 6. Rota para listar os processos por tenant/escritório
+// 7. Listar Processos estritamente do Escritório Logado
 app.get('/api/processos', async (req, res) => {
     try {
-        const tenantId = req.query.tenantId || 'escritorio_padrao';
+        const tenantId = req.query.tenantId;
+        if (!tenantId) return res.status(400).json({ error: 'Tenant ID em falta.' });
 
         const { data, error } = await supabase
             .from('processos')
@@ -199,4 +200,4 @@ app.get('/api/processos', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`JurisSync AI Backend v4.0 (SaaS Multi-Tenant Active) na porta ${PORT}`));
+app.listen(PORT, () => console.log(`JurisSync AI SaaS v5.0 na porta ${PORT}`));
