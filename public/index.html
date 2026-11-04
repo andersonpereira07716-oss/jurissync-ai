@@ -10,17 +10,17 @@
     <div class="max-w-2xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-slate-800 pb-4">
             <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v2.2 DataJud</span>
+            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v2.3 IA Engine</span>
         </header>
 
-        <!-- Formulário com DataJud -->
+        <!-- Formulário com IA e DataJud -->
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
-            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor & Consulta Automática CNJ</h2>
+            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor Jurídico & IA</h2>
             
             <div class="flex gap-2">
                 <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
                 <button onclick="consultarDataJud()" id="btn-cnj" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all">
-                    🔍 Capturar no CNJ
+                    🔍 Capturar CNJ
                 </button>
             </div>
 
@@ -29,8 +29,12 @@
                 <input type="text" id="whatsapp" placeholder="WhatsApp (5583...)" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
             </div>
 
-            <textarea id="movimentacao" placeholder="O texto técnico do tribunal aparecerá aqui automaticamente..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
+            <textarea id="movimentacao" placeholder="Cole o texto técnico do tribunal aqui..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
             
+            <button onclick="traduzirComIA()" id="btn-ia" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-semibold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
+                🤖 Traduzir Juridiquês com IA para o Cliente
+            </button>
+
             <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Processar e Atualizar</button>
         </div>
 
@@ -45,34 +49,54 @@
         async function consultarDataJud() {
             const numero = document.getElementById('numero').value;
             const btn = document.getElementById('btn-cnj');
+            if (!numero) { alert('Digite o número do processo!'); return; }
 
-            if (!numero) {
-                alert('Digite o número do processo primeiro!');
-                return;
-            }
-
-            btn.innerText = '⌛ Consultando...';
+            btn.innerText = '⌛...';
             btn.disabled = true;
-
             try {
                 const res = await fetch('/api/processos/consultar-cnj', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ numeroProcesso: numero })
                 });
-
                 const data = await res.json();
-
                 if (res.ok) {
-                    document.getElementById('movimentacao').value = `${data.ultimaMovimentacao} (${data.orgaoJulgador || 'Tribunal'})`;
-                    alert('Movimentação capturada com sucesso do DataJud!');
+                    document.getElementById('movimentacao').value = data.ultimaMovimentacao;
+                    alert('Andamento capturado com sucesso!');
                 } else {
-                    alert(data.mensagem || data.error || 'Não foi possível capturar o andamento.');
+                    alert(data.mensagem || 'Erro ao capturar.');
                 }
             } catch (e) {
-                alert('Erro ao conectar à API DataJud.');
+                alert('Erro de conexão.');
             } finally {
-                btn.innerText = '🔍 Capturar no CNJ';
+                btn.innerText = '🔍 Capturar CNJ';
+                btn.disabled = false;
+            }
+        }
+
+        async function traduzirComIA() {
+            const texto = document.getElementById('movimentacao').value;
+            const btn = document.getElementById('btn-ia');
+            if (!texto) { alert('Insira ou capture um texto técnico primeiro!'); return; }
+
+            btn.innerText = '🤖 A traduzir com IA...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/processos/traduzir-ia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ textoTecnico: texto })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('movimentacao').value = data.resumoTraduzido;
+                    window.urgenciaTemp = data.urgencia;
+                    alert('Tradução concluída com sucesso!');
+                }
+            } catch (e) {
+                alert('Erro ao traduzir.');
+            } finally {
+                btn.innerText = '🤖 Traduzir Juridiquês com IA para o Cliente';
                 btn.disabled = false;
             }
         }
@@ -106,7 +130,7 @@
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <div class="flex justify-between items-start">
                                 <span class="text-xs font-mono text-emerald-400">${p.numero}</span>
-                                <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${p.status || 'Ativo'}</span>
+                                <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${p.urgencia || 'Ativo'}</span>
                             </div>
                             <div>
                                 <h4 class="font-bold text-slate-100">${p.cliente}</h4>
@@ -122,7 +146,7 @@
                     `;
                 });
             } catch (e) {
-                console.error("Erro ao carregar processos:", e);
+                console.error(e);
             }
         }
 
@@ -132,18 +156,15 @@
             const whatsapp = document.getElementById('whatsapp').value;
             const movimentacao = document.getElementById('movimentacao').value;
 
-            if(!numero || !cliente) {
-                alert('Preencha pelo menos o número e o cliente!');
-                return;
-            }
+            if(!numero || !cliente) { alert('Preencha número e cliente!'); return; }
 
             const payload = {
                 id: Date.now().toString(),
                 numero,
                 cliente,
                 whatsapp,
-                urgencia: 'Alto',
-                status: 'Andamento Recente',
+                urgencia: window.urgenciaTemp || 'Médio',
+                status: 'Atualizado por IA',
                 historico: [{ data: new Date().toLocaleDateString(), movimentacao }]
             };
 
@@ -154,14 +175,13 @@
             });
 
             if(res.ok) {
-                alert('Processo processado e atualizado com sucesso!');
+                alert('Processo guardado e traduzido com sucesso!');
                 document.getElementById('numero').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('whatsapp').value = '';
                 document.getElementById('movimentacao').value = '';
+                window.urgenciaTemp = null;
                 carregarProcessos();
-            } else {
-                alert('Erro ao salvar no servidor.');
             }
         }
 
