@@ -13,56 +13,65 @@ const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqd
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Registo de Novo Escritório (Com Validação e Tratamento Blindado)
+// 1. Registo Protegido contra Golpes de Teste (Validação por E-mail e WhatsApp)
 app.post('/api/auth/registar', async (req, res) => {
     try {
-        const { nomeEscritorio, email, senha } = req.body;
-        if (!email || !senha || !nomeEscritorio) {
-            return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
+        const { nomeEscritorio, email, senha, whatsapp } = req.body;
+        if (!email || !senha || !nomeEscritorio || !whatsapp) {
+            return res.status(400).json({ error: 'Preencha todos os campos, incluindo o WhatsApp.' });
+        }
+
+        const emailLimpo = email.trim().toLowerCase();
+        const whatsLimpo = whatsapp.replace(/\D/g, ''); // Remove formatação
+
+        // Verifica se o e-mail já existe
+        const { data: checkEmail } = await supabase
+            .from('escritorios')
+            .select('tenant_id')
+            .eq('email', emailLimpo)
+            .maybeSingle();
+
+        if (checkEmail) {
+            return res.status(400).json({ error: 'Este e-mail já possui uma conta registada.' });
+        }
+
+        // Verifica se o WhatsApp já foi usado para ativar o teste grátis
+        const { data: checkWhats } = await supabase
+            .from('escritorios')
+            .select('tenant_id')
+            .eq('whatsapp', whatsLimpo)
+            .maybeSingle();
+
+        if (checkWhats) {
+            return res.status(400).json({ error: 'Este número de WhatsApp já utilizou o período de teste gratuito de 3 dias.' });
         }
 
         const tenantId = 'esc_' + Math.random().toString(36).substring(2, 9);
         const dataCriacao = new Date().toISOString();
 
-        // Tenta registar no Supabase
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('escritorios')
             .insert([{ 
                 tenant_id: tenantId, 
                 nome_escritorio: nomeEscritorio, 
-                email: email.trim().toLowerCase(), 
+                email: emailLimpo, 
                 senha, 
+                whatsapp: whatsLimpo,
                 plano: 'solo', 
                 status_assinatura: 'trial',
                 created_at: dataCriacao
-            }])
-            .select();
+            }]);
 
-        if (error) {
-            console.error("Erro Supabase Registo:", error);
-            // Fallback se a coluna created_at der problema
-            const { error: errFallback } = await supabase
-                .from('escritorios')
-                .insert([{ 
-                    tenant_id: tenantId, 
-                    nome_escritorio: nomeEscritorio, 
-                    email: email.trim().toLowerCase(), 
-                    senha
-                }]);
-
-            if (errFallback) {
-                return res.status(400).json({ error: errFallback.message || 'Erro ao criar conta no banco de dados.' });
-            }
-        }
+        if (error) throw error;
 
         return res.status(200).json({ status: 'sucesso', tenantId, nomeEscritorio });
     } catch (err) {
-        console.error("Erro no Servidor ao Registar:", err);
+        console.error("Erro no Registo:", err);
         return res.status(500).json({ error: 'Erro interno ao registar: ' + err.message });
     }
 });
 
-// 2. Login com Cálculo Seguro de Dias
+// 2. Login de Escritório
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
@@ -83,7 +92,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
         }
 
-        // Cálculo seguro de dias restantes (3 dias grátis)
         let diasRestantes = 3;
         if (data.created_at) {
             const dataCriacao = new Date(data.created_at);
@@ -100,8 +108,7 @@ app.post('/api/auth/login', async (req, res) => {
             diasRestantes: diasRestantes
         });
     } catch (err) {
-        console.error("Erro no Servidor ao Fazer Login:", err);
-        return res.status(500).json({ error: 'Erro interno ao fazer login: ' + err.message });
+        return res.status(500).json({ error: 'Erro ao fazer login.' });
     }
 });
 
@@ -122,7 +129,6 @@ app.post('/api/saas/criar-pagamento', async (req, res) => {
             status: 'sucesso',
             init_point: linkFinal
         });
-
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -264,4 +270,4 @@ app.get('/api/processos', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`JurisSync AI SaaS v5.1 na porta ${PORT}`));
+app.listen(PORT, () => console.log(`JurisSync AI SaaS v5.2 na porta ${PORT}`));

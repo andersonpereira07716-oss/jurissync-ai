@@ -14,7 +14,7 @@
             <h1 class="text-2xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
             <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
             <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] px-3 py-1 rounded-full font-semibold">
-                ✨ 3 Dias Grátis para Testar o Seu Escritório
+                ✨ 3 Dias Grátis (1 Teste por WhatsApp)
             </div>
         </div>
 
@@ -34,6 +34,7 @@
         <div id="box-registar" class="space-y-4 hidden">
             <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+            <input type="text" id="reg-whatsapp" placeholder="WhatsApp do Escritório (5583...)" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Começar 3 Dias Grátis</button>
         </div>
@@ -180,10 +181,11 @@
         async function fazerRegisto() {
             const nomeEscritorio = document.getElementById('reg-nome').value.trim();
             const email = document.getElementById('reg-email').value.trim();
+            const whatsapp = document.getElementById('reg-whatsapp').value.trim();
             const senha = document.getElementById('reg-senha').value.trim();
 
-            if (!nomeEscritorio || !email || !senha) {
-                alert('Preencha todos os campos para registar!');
+            if (!nomeEscritorio || !email || !whatsapp || !senha) {
+                alert('Preencha todos os campos obrigatórios!');
                 return;
             }
 
@@ -191,14 +193,14 @@
                 const res = await fetch('/api/auth/registar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nomeEscritorio, email, senha })
+                    body: JSON.stringify({ nomeEscritorio, email, whatsapp, senha })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('Escritório registado com 3 dias grátis! Faça login para começar.');
+                    alert('Escritório registado com sucesso! Faça login.');
                     mudarModoAuth('login');
                 } else {
-                    alert('Erro ao registar: ' + (data.error || 'Erro desconhecido.'));
+                    alert('Aviso: ' + (data.error || 'Erro ao registar.'));
                 }
             } catch (e) {
                 alert('Erro de conexão com o servidor ao registar.');
