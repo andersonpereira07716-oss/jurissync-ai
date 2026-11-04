@@ -15,20 +15,20 @@
             <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
         </div>
 
-        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-            <button onclick="alternarTab('login')" id="tab-login" class="flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all">Entrar</button>
-            <button onclick="alternarTab('registar')" id="tab-registar" class="flex-1 py-2 rounded-lg text-slate-400 transition-all">Criar Conta</button>
+        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+            <button onclick="mudarModoAuth('login')" id="btn-tab-login" class="py-2.5 rounded-lg bg-emerald-500 text-slate-950 transition-all font-bold">Entrar</button>
+            <button onclick="mudarModoAuth('registar')" id="btn-tab-registar" class="py-2.5 rounded-lg text-slate-400 transition-all">Criar Conta</button>
         </div>
 
         <!-- Formulário de Login -->
-        <div id="form-login" class="space-y-4">
+        <div id="box-login" class="space-y-4">
             <input type="email" id="login-email" placeholder="E-mail do Escritório" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="password" id="login-senha" placeholder="Palavra-passe" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <button onclick="fazerLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Aceder ao Painel</button>
         </div>
 
         <!-- Formulário de Registo -->
-        <div id="form-registar" class="space-y-4 hidden">
+        <div id="box-registar" class="space-y-4 hidden">
             <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
@@ -101,26 +101,34 @@
             mostrarApp(nomeEscritorioAtual);
         }
 
-        function alternarTab(tipo) {
-            if (tipo === 'login') {
-                document.getElementById('form-login').classList.remove('hidden');
-                document.getElementById('form-registar').classList.add('hidden');
-                document.getElementById('tab-login').className = 'flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all';
-                document.getElementById('tab-registar').className = 'flex-1 py-2 rounded-lg text-slate-400 transition-all';
+        function mudarModoAuth(modo) {
+            const boxLogin = document.getElementById('box-login');
+            const boxRegistar = document.getElementById('box-registar');
+            const btnLogin = document.getElementById('btn-tab-login');
+            const btnRegistar = document.getElementById('btn-tab-registar');
+
+            if (modo === 'login') {
+                boxLogin.classList.remove('hidden');
+                boxRegistar.classList.add('hidden');
+                btnLogin.className = 'py-2.5 rounded-lg bg-emerald-500 text-slate-950 transition-all font-bold';
+                btnRegistar.className = 'py-2.5 rounded-lg text-slate-400 transition-all';
             } else {
-                document.getElementById('form-login').classList.add('hidden');
-                document.getElementById('form-registar').classList.remove('hidden');
-                document.getElementById('tab-registar').className = 'flex-1 py-2 rounded-lg bg-emerald-500 text-slate-950 transition-all';
-                document.getElementById('tab-login').className = 'flex-1 py-2 rounded-lg text-slate-400 transition-all';
+                boxLogin.classList.add('hidden');
+                boxRegistar.classList.remove('hidden');
+                btnRegistar.className = 'py-2.5 rounded-lg bg-emerald-500 text-slate-950 transition-all font-bold';
+                btnLogin.className = 'py-2.5 rounded-lg text-slate-400 transition-all';
             }
         }
 
         async function fazerRegisto() {
-            const nomeEscritorio = document.getElementById('reg-nome').value;
-            const email = document.getElementById('reg-email').value;
-            const senha = document.getElementById('reg-senha').value;
+            const nomeEscritorio = document.getElementById('reg-nome').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const senha = document.getElementById('reg-senha').value.trim();
 
-            if (!nomeEscritorio || !email || !senha) return;
+            if (!nomeEscritorio || !email || !senha) {
+                alert('Preencha todos os campos para registar!');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/auth/registar', {
@@ -130,21 +138,24 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('Conta criada com sucesso! Faça login.');
-                    alternarTab('login');
+                    alert('Escritório registado com sucesso! Faça login.');
+                    mudarModoAuth('login');
                 } else {
                     alert(data.error || 'Erro ao registar.');
                 }
             } catch (e) {
-                console.error(e);
+                alert('Erro de conexão ao registar.');
             }
         }
 
         async function fazerLogin() {
-            const email = document.getElementById('login-email').value;
-            const senha = document.getElementById('login-senha').value;
+            const email = document.getElementById('login-email').value.trim();
+            const senha = document.getElementById('login-senha').value.trim();
 
-            if (!email || !senha) return;
+            if (!email || !senha) {
+                alert('Preencha o e-mail e a palavra-passe!');
+                return;
+            }
 
             try {
                 const res = await fetch('/api/auth/login', {
@@ -163,7 +174,7 @@
                     alert(data.error || 'Credenciais inválidas.');
                 }
             } catch (e) {
-                console.error(e);
+                alert('Erro de conexão ao fazer login.');
             }
         }
 
