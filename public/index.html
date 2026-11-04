@@ -141,10 +141,10 @@
                     alert('Escritório registado com sucesso! Faça login.');
                     mudarModoAuth('login');
                 } else {
-                    alert(data.error || 'Erro ao registar.');
+                    alert('Erro ao registar: ' + (data.error || 'Erro desconhecido.'));
                 }
             } catch (e) {
-                alert('Erro de conexão ao registar.');
+                alert('Erro de conexão com o servidor ao registar.');
             }
         }
 
@@ -171,10 +171,10 @@
                     nomeEscritorioAtual = data.nomeEscritorio;
                     mostrarApp(data.nomeEscritorio);
                 } else {
-                    alert(data.error || 'Credenciais inválidas.');
+                    alert('Erro no login: ' + (data.error || 'Credenciais inválidas.'));
                 }
             } catch (e) {
-                alert('Erro de conexão ao fazer login.');
+                alert('Erro de conexão com o servidor ao fazer login.');
             }
         }
 

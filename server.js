@@ -18,19 +18,24 @@ app.post('/api/auth/registar', async (req, res) => {
     try {
         const { nomeEscritorio, email, senha } = req.body;
         if (!email || !senha || !nomeEscritorio) {
-            return res.status(400).json({ error: 'Preencha todos os campos.' });
+            return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
         }
 
-        const tenantId = 'esc_' + Math.random().toString(36.substring(2, 9));
+        const tenantId = 'esc_' + Math.random().toString(36).substring(2, 9);
 
         const { data, error } = await supabase
             .from('escritorios')
-            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha }]);
+            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha }])
+            .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error("Erro Supabase Registo:", error);
+            return res.status(400).json({ error: error.message || 'Erro ao guardar no Supabase.' });
+        }
 
         return res.status(200).json({ status: 'sucesso', tenantId, nomeEscritorio });
     } catch (err) {
+        console.error("Erro Servidor Registo:", err);
         return res.status(500).json({ error: err.message });
     }
 });
@@ -51,7 +56,7 @@ app.post('/api/auth/login', async (req, res) => {
             .single();
 
         if (error || !data) {
-            return res.status(401).json({ error: 'Credenciais inválidas.' });
+            return res.status(401).json({ error: 'E-mail ou palavra-passe inválidos.' });
         }
 
         return res.status(200).json({
