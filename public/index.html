@@ -49,20 +49,34 @@
 
                 dados.forEach(p => {
                     let historicoHtml = '';
-                    if (Array.isArray(p.historico)) {
+                    let ultimaMov = '';
+                    if (Array.isArray(p.historico) && p.historico.length > 0) {
                         p.historico.forEach(h => {
-                            historicoHtml += `<div class="text-xs text-slate-300 mt-1 bg-slate-950 p-2 rounded border border-slate-800"><span class="text-emerald-400">[${h.data}]</span> ${h.movimentacao || h.resumoCliente}</div>`;
+                            ultimaMov = h.movimentacao || h.resumoCliente || '';
+                            historicoHtml += `<div class="text-xs text-slate-300 mt-1 bg-slate-950 p-2 rounded border border-slate-800"><span class="text-emerald-400">[${h.data}]</span> ${ultimaMov}</div>`;
                         });
                     }
 
+                    // Mensagem formatada para o WhatsApp
+                    const msgWhats = encodeURIComponent(`Olá, ${p.cliente}! Segue a atualização do seu processo nº ${p.numero}:\n\n"${ultimaMov}"\n\nQualquer dúvida, estamos à disposição!`);
+                    const linkWhats = p.whatsapp ? `https://api.whatsapp.com/send?phone=${p.whatsapp}&text=${msgWhats}` : '#';
+
                     container.innerHTML += `
-                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-2">
+                        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <div class="flex justify-between items-start">
                                 <span class="text-xs font-mono text-emerald-400">${p.numero}</span>
                                 <span class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${p.status || 'Ativo'}</span>
                             </div>
-                            <h4 class="font-bold text-slate-100">${p.cliente}</h4>
+                            <div>
+                                <h4 class="font-bold text-slate-100">${p.cliente}</h4>
+                                <p class="text-xs text-slate-400">Tel: ${p.whatsapp || 'Não informado'}</p>
+                            </div>
                             <div class="space-y-1">${historicoHtml}</div>
+                            ${p.whatsapp ? `
+                                <a href="${linkWhats}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition-all shadow-md">
+                                    💬 Enviar Atualização via WhatsApp
+                                </a>
+                            ` : ''}
                         </div>
                     `;
                 });
