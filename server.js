@@ -13,7 +13,41 @@ const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqd
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Rota de Disparo Automático via API do WhatsApp
+// 1. Rota de Gestão de Assinatura e Planos SaaS (Stripe / Asaas Mock)
+app.post('/api/saas/assinar', async (req, res) => {
+    try {
+        const { escritorioId, plano, email } = req.body;
+        
+        if (!escritorioId || !plano) {
+            return res.status(400).json({ error: 'ID do escritório e plano são obrigatórios.' });
+        }
+
+        // Simulação de criação de checkout ou ativação de licença SaaS
+        const planosValidos = {
+            'solo': { limiteProcessos: 50, valor: 'R$ 97/mês' },
+            'escritorio': { limiteProcessos: 300, valor: 'R$ 197/mês' },
+            'enterprise': { limiteProcessos: 9999, valor: 'R$ 497/mês' }
+        };
+
+        const dadosPlano = planosValidos[plano] || planosValidos['solo'];
+
+        return res.status(200).json({
+            status: 'sucesso',
+            mensagem: `Assinatura do plano ${plano.toUpperCase()} ativada com sucesso!`,
+            detalhes: {
+                escritorioId,
+                email: email || 'advogado@escritorio.com',
+                limiteProcessos: dadosPlano.limiteProcessos,
+                valorMensal: dadosPlano.valor,
+                renovacaoAutomatica: true
+            }
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Rota de Disparo Automático via API do WhatsApp
 app.post('/api/processos/notificar-whatsapp', async (req, res) => {
     try {
         const { telefone, cliente, numeroProcesso, mensagem } = req.body;
@@ -24,7 +58,6 @@ app.post('/api/processos/notificar-whatsapp', async (req, res) => {
 
         const mensagemTexto = `Olá, ${cliente}! Segue a atualização do seu processo nº ${numeroProcesso}:\n\n"${mensagem}"\n\nQualquer dúvida, estamos à disposição!`;
 
-        // Se houver uma API de WhatsApp configurada nas variáveis de ambiente, dispara
         if (WHATSAPP_API_URL && WHATSAPP_API_TOKEN) {
             const apiRes = await fetch(WHATSAPP_API_URL, {
                 method: 'POST',
@@ -32,20 +65,14 @@ app.post('/api/processos/notificar-whatsapp', async (req, res) => {
                     'Content-Type': 'application/json',
                     'apikey': WHATSAPP_API_TOKEN
                 },
-                body: JSON.stringify({
-                    number: telefone,
-                    text: mensagemTexto
-                })
+                body: JSON.stringify({ number: telefone, text: mensagemTexto })
             });
 
-            if (!apiRes.ok) {
-                throw new Error(`Falha no Gateway de WhatsApp: status ${apiRes.status}`);
-            }
+            if (!apiRes.ok) throw new Error(`Falha no Gateway de WhatsApp: status ${apiRes.status}`);
 
             return res.status(200).json({ status: 'sucesso', modo: 'API_AUTOMATICO', mensagem: 'Mensagem enviada automaticamente!' });
         }
 
-        // Caso ainda não haja API de gateway configurada, devolve o link formatado
         const linkWhats = `https://api.whatsapp.com/send?phone=${telefone}&text=${encodeURIComponent(mensagemTexto)}`;
         return res.status(200).json({ status: 'sucesso', modo: 'DEEP_LINK', link: linkWhats });
 
@@ -54,7 +81,7 @@ app.post('/api/processos/notificar-whatsapp', async (req, res) => {
     }
 });
 
-// 2. Rota de Tradução Inteligente com IA
+// 3. Rota de Tradução Inteligente com IA
 app.post('/api/processos/traduzir-ia', async (req, res) => {
     try {
         const { textoTecnico } = req.body;
@@ -83,7 +110,7 @@ app.post('/api/processos/traduzir-ia', async (req, res) => {
     }
 });
 
-// 3. Rota de Consulta Automática ao DataJud (CNJ)
+// 4. Rota de Consulta Automática ao DataJud (CNJ)
 app.post('/api/processos/consultar-cnj', async (req, res) => {
     try {
         const { numeroProcesso } = req.body;
@@ -125,10 +152,10 @@ app.post('/api/processos/consultar-cnj', async (req, res) => {
     }
 });
 
-// 4. Rota para salvar ou atualizar processos
+// 5. Rota para salvar ou atualizar processos com Multi-tenancy (tenant_id)
 app.post('/api/processos', async (req, res) => {
     try {
-        const { id, numero, cliente, whatsapp, urgencia, status, historico } = req.body;
+        const { id, numero, cliente, whatsapp, urgencia, status, historico, tenantId } = req.body;
 
         const { data, error } = await supabase
             .from('processos')
@@ -141,23 +168,27 @@ app.post('/api/processos', async (req, res) => {
                     urgencia: urgencia || 'Médio',
                     status: status || 'Em Andamento',
                     historico,
+                    tenant_id: tenantId || 'escritorio_padrao',
                     created_at: new Date().toISOString()
                 }
             ]);
 
         if (error) throw error;
-        return res.status(200).json({ status: 'sucesso', mensagem: 'Processo atualizado com sucesso!' });
+        return res.status(200).json({ status: 'sucesso', mensagem: 'Processo guardado com sucesso!' });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
-// 5. Rota para listar os processos
+// 6. Rota para listar os processos por tenant/escritório
 app.get('/api/processos', async (req, res) => {
     try {
+        const tenantId = req.query.tenantId || 'escritorio_padrao';
+
         const { data, error } = await supabase
             .from('processos')
             .select('*')
+            .eq('tenant_id', tenantId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -168,4 +199,4 @@ app.get('/api/processos', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`JurisSync AI Backend v3.0 (Background Disparos Active) na porta ${PORT}`));
+app.listen(PORT, () => console.log(`JurisSync AI Backend v4.0 (SaaS Multi-Tenant Active) na porta ${PORT}`));

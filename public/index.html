@@ -3,19 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JurisSync AI - Pro</title>
+    <title>JurisSync AI - SaaS Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4">
     <div class="max-w-2xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v3.0 Background Dispatch</span>
+            <div>
+                <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
+                <p class="text-xs text-slate-400">Plataforma Jurídica Multi-tenant</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="text" id="tenant-id" value="escritorio_padrao" onchange="carregarProcessos()" class="bg-slate-900 border border-slate-800 text-xs px-2.5 py-1.5 rounded-lg text-emerald-400 font-mono outline-none focus:border-emerald-500 w-36" title="ID do Escritório (Tenant)">
+                <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v4.0 SaaS</span>
+            </div>
         </header>
 
-        <!-- Formulário -->
+        <!-- Painel de Planos SaaS / Monetização -->
+        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
+            <span class="text-slate-300">Plano Ativo: <strong class="text-emerald-400">Escritório Pro (300 Proc.)</strong></span>
+            <button onclick="ativarPlano('escritorio')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-semibold transition-all">
+                💳 Gerir Assinatura
+            </button>
+        </div>
+
+        <!-- Formulário de Processos -->
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
-            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor Jurídico & Disparo</h2>
+            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Gestão & Automação de Processos</h2>
             
             <div class="flex gap-2">
                 <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
@@ -29,23 +43,40 @@
                 <input type="text" id="whatsapp" placeholder="WhatsApp (5583...)" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
             </div>
 
-            <textarea id="movimentacao" placeholder="Cole o texto técnico do tribunal aqui..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
+            <textarea id="movimentacao" placeholder="Cole ou capture o texto técnico do tribunal..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
             
             <button onclick="traduzirComIA()" id="btn-ia" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-semibold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
                 🤖 Traduzir Juridiquês com IA para o Cliente
             </button>
 
-            <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Processar e Atualizar</button>
+            <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
         </div>
 
-        <!-- Timeline / Lista -->
+        <!-- Lista de Processos -->
         <div class="space-y-3">
-            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Processos & Timeline</h3>
+            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Timeline do Escritório</h3>
             <div id="lista-processos" class="space-y-3"></div>
         </div>
     </div>
 
     <script>
+        async function ativarPlano(plano) {
+            const tenantId = document.getElementById('tenant-id').value;
+            try {
+                const res = await fetch('/api/saas/assinar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ escritorioId: tenantId, plano })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(`${data.mensagem}\nValor: ${data.detalhes.valorMensal}`);
+                }
+            } catch (e) {
+                alert('Erro ao processar assinatura.');
+            }
+        }
+
         async function consultarDataJud() {
             const numero = document.getElementById('numero').value;
             const btn = document.getElementById('btn-cnj');
@@ -120,14 +151,15 @@
         }
 
         async function carregarProcessos() {
+            const tenantId = document.getElementById('tenant-id').value;
             try {
-                const res = await fetch('/api/processos');
+                const res = await fetch(`/api/processos?tenantId=${tenantId}`);
                 const dados = await res.json();
                 const container = document.getElementById('lista-processos');
                 container.innerHTML = '';
 
                 if (!Array.isArray(dados) || dados.length === 0) {
-                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Nenhum processo registado.</p>';
+                    container.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">Nenhum processo registado para este escritório.</p>';
                     return;
                 }
 
@@ -170,6 +202,7 @@
             const cliente = document.getElementById('cliente').value;
             const whatsapp = document.getElementById('whatsapp').value;
             const movimentacao = document.getElementById('movimentacao').value;
+            const tenantId = document.getElementById('tenant-id').value;
 
             if(!numero || !cliente) { alert('Preencha número e cliente!'); return; }
 
@@ -180,6 +213,7 @@
                 whatsapp,
                 urgencia: window.urgenciaTemp || 'Médio',
                 status: 'Atualizado por IA',
+                tenantId,
                 historico: [{ data: new Date().toLocaleDateString(), movimentacao }]
             };
 
@@ -190,7 +224,7 @@
             });
 
             if(res.ok) {
-                alert('Processo guardado e atualizado com sucesso!');
+                alert('Processo guardado com sucesso no escritório!');
                 document.getElementById('numero').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('whatsapp').value = '';
