@@ -9,26 +9,8 @@ app.use(express.json());
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Middleware para verificar a sessão (JWT Token) do Supabase Auth
-async function verificarSessao(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).json({ error: 'Acesso negado. Token de autenticação não fornecido.' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-        return res.status(403).json({ error: 'Sessão inválida ou expirada. Faça login novamente.' });
-    }
-
-    req.user = user;
-    next();
-}
-
-// Rota protegida para salvar ou atualizar processos
-app.post('/api/processos', verificarSessao, async (req, res) => {
+// Rota para salvar ou atualizar processos (Acesso direto livre)
+app.post('/api/processos', async (req, res) => {
     try {
         const { id, numero, cliente, whatsapp, urgencia, status, historico } = req.body;
 
@@ -55,8 +37,8 @@ app.post('/api/processos', verificarSessao, async (req, res) => {
     }
 });
 
-// Rota protegida para listar os processos
-app.get('/api/processos', verificarSessao, async (req, res) => {
+// Rota para listar os processos
+app.get('/api/processos', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('processos')
