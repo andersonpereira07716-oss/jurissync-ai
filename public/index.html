@@ -10,31 +10,73 @@
     <div class="max-w-2xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-slate-800 pb-4">
             <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v2.1 Pro</span>
+            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v2.2 DataJud</span>
         </header>
 
-        <!-- Formulário -->
+        <!-- Formulário com DataJud -->
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
-            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor & Nova Movimentação</h2>
-            <input type="text" id="numero" placeholder="Número do Processo" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
+            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor & Consulta Automática CNJ</h2>
+            
+            <div class="flex gap-2">
+                <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
+                <button onclick="consultarDataJud()" id="btn-cnj" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all">
+                    🔍 Capturar no CNJ
+                </button>
+            </div>
+
             <div class="grid grid-cols-2 gap-2">
                 <input type="text" id="cliente" placeholder="Nome do Cliente" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
                 <input type="text" id="whatsapp" placeholder="WhatsApp (5583...)" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
             </div>
-            <textarea id="movimentacao" placeholder="Cole o texto técnico aqui..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
+
+            <textarea id="movimentacao" placeholder="O texto técnico do tribunal aparecerá aqui automaticamente..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
+            
             <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Processar e Atualizar</button>
         </div>
 
         <!-- Timeline / Lista -->
         <div class="space-y-3">
             <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Processos & Timeline</h3>
-            <div id="lista-processos" class="space-y-3">
-                <!-- Os processos carregam aqui -->
-            </div>
+            <div id="lista-processos" class="space-y-3"></div>
         </div>
     </div>
 
     <script>
+        async function consultarDataJud() {
+            const numero = document.getElementById('numero').value;
+            const btn = document.getElementById('btn-cnj');
+
+            if (!numero) {
+                alert('Digite o número do processo primeiro!');
+                return;
+            }
+
+            btn.innerText = '⌛ Consultando...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/processos/consultar-cnj', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numeroProcesso: numero })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('movimentacao').value = `${data.ultimaMovimentacao} (${data.orgaoJulgador || 'Tribunal'})`;
+                    alert('Movimentação capturada com sucesso do DataJud!');
+                } else {
+                    alert(data.mensagem || data.error || 'Não foi possível capturar o andamento.');
+                }
+            } catch (e) {
+                alert('Erro ao conectar à API DataJud.');
+            } finally {
+                btn.innerText = '🔍 Capturar no CNJ';
+                btn.disabled = false;
+            }
+        }
+
         async function carregarProcessos() {
             try {
                 const res = await fetch('/api/processos');
@@ -57,7 +99,6 @@
                         });
                     }
 
-                    // Mensagem formatada para o WhatsApp
                     const msgWhats = encodeURIComponent(`Olá, ${p.cliente}! Segue a atualização do seu processo nº ${p.numero}:\n\n"${ultimaMov}"\n\nQualquer dúvida, estamos à disposição!`);
                     const linkWhats = p.whatsapp ? `https://api.whatsapp.com/send?phone=${p.whatsapp}&text=${msgWhats}` : '#';
 
