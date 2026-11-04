@@ -12,7 +12,6 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqdnBhd2xpY2E=";
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 
 // 1. Registo de Novo Escritório (SaaS)
 app.post('/api/auth/registar', async (req, res) => {
@@ -71,69 +70,27 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// 3. Criar Pagamento Mercado Pago com Fallback Inteligente
+// 3. Redirecionamento para os Links Oficiais do Mercado Pago
 app.post('/api/saas/criar-pagamento', async (req, res) => {
     try {
-        const { tenantId, plano, email } = req.body;
+        const { plano } = req.body;
         
-        const precos = {
-            'solo': 97.00,
-            'escritorio': 197.00,
-            'enterprise': 497.00
+        // Mapeamento direto com os links oficiais do Mercado Pago fornecidos
+        const linksPagamento = {
+            'solo': 'https://mpago.la/2sd5VTS',
+            'escritorio': 'https://mpago.la/15XTnEn',
+            'enterprise': 'https://mpago.la/2y4K2H9'
         };
 
-        const valor = precos[plano] || 97.00;
+        const linkFinal = linksPagamento[plano] || linksPagamento['solo'];
 
-        // Se o token não estiver definido ou se houver falha de autorização, usa o canal direto seguro do WhatsApp
-        if (!MP_ACCESS_TOKEN) {
-            const linkWhats = `https://api.whatsapp.com/send?phone=5583998765554&text=Olá! Quero assinar o Plano ${plano.toUpperCase()} (R$ ${valor}) no JurisSync AI para o escritório ID: ${tenantId}.`;
-            return res.status(200).json({ status: 'sucesso', init_point: linkWhats });
-        }
-
-        const emailPayer = (email && email.includes('@')) ? email : 'cliente@jurissync.com.br';
-
-        const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${MP_ACCESS_TOKEN.trim()}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                items: [{
-                    title: `JurisSync AI - Plano ${plano.toUpperCase()}`,
-                    quantity: 1,
-                    currency_id: 'BRL',
-                    unit_price: valor
-                }],
-                payer: {
-                    email: emailPayer
-                },
-                back_urls: {
-                    success: "https://jurissync-mvp.vercel.app?status=sucesso",
-                    failure: "https://jurissync-mvp.vercel.app?status=falha"
-                },
-                auto_return: "approved"
-            })
-        });
-
-        const mpData = await mpResponse.json();
-
-        // Se a API retornar erro de autorização (Unauthorized), aplica o fallback automático para o WhatsApp
-        if (!mpResponse.ok || !mpData.init_point) {
-            console.warn("Aviso Mercado Pago (Unauthorized/Erro):", mpData);
-            const linkWhats = `https://api.whatsapp.com/send?phone=5583998765554&text=Olá! Quero assinar o Plano ${plano.toUpperCase()} (R$ ${valor}) no JurisSync AI para o escritório ID: ${tenantId}.`;
-            return res.status(200).json({ status: 'sucesso', init_point: linkWhats });
-        }
-        
         return res.status(200).json({
             status: 'sucesso',
-            init_point: mpData.init_point
+            init_point: linkFinal
         });
 
     } catch (err) {
-        console.error("Erro interno ao gerar pagamento:", err);
-        const linkWhats = `https://api.whatsapp.com/send?phone=5583998765554&text=Olá! Quero assinar o plano no JurisSync AI para o escritório ID: ${tenantId}.`;
-        return res.status(200).json({ status: 'sucesso', init_point: linkWhats });
+        return res.status(500).json({ error: err.message });
     }
 });
 
