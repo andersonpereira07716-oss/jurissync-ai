@@ -19,12 +19,17 @@
             </div>
         </header>
 
-        <!-- Painel de Planos SaaS / Monetização -->
-        <div class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl flex items-center justify-between text-xs">
-            <span class="text-slate-300">Plano Ativo: <strong class="text-emerald-400">Escritório Pro (300 Proc.)</strong></span>
-            <button onclick="ativarPlano('escritorio')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg font-semibold transition-all">
-                💳 Gerir Assinatura
-            </button>
+        <!-- Atalhos Rápidos com Exemplos de Texto -->
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">⚡ Preenchimento Rápido (Testes)</span>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="preencherExemplo('sentenca')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
+                    📄 Exemplo: Sentença Procedente
+                </button>
+                <button onclick="preencherExemplo('citacao')" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
+                    📬 Exemplo: Citação / Prazo
+                </button>
+            </div>
         </div>
 
         <!-- Formulário de Processos -->
@@ -49,7 +54,7 @@
                 🤖 Traduzir Juridiquês com IA para o Cliente
             </button>
 
-            <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
+            <button onclick="enviarProcesso()" id="btn-salvar" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
         </div>
 
         <!-- Lista de Processos -->
@@ -60,27 +65,24 @@
     </div>
 
     <script>
-        async function ativarPlano(plano) {
-            const tenantId = document.getElementById('tenant-id').value;
-            try {
-                const res = await fetch('/api/saas/assinar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ escritorioId: tenantId, plano })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert(`${data.mensagem}\nValor: ${data.detalhes.valorMensal}`);
-                }
-            } catch (e) {
-                alert('Erro ao processar assinatura.');
+        function preencherExemplo(tipo) {
+            if (tipo === 'sentenca') {
+                document.getElementById('numero').value = '0801929-30.2024.8.15.0251';
+                document.getElementById('cliente').value = 'Ana Maria Francisca da Silva';
+                document.getElementById('whatsapp').value = '5583998765554';
+                document.getElementById('movimentacao').value = 'Vistos, etc. Trata-se de ação ordinária... JULGO PROCEDENTE o pedido formulado na inicial para condenar a parte requerida ao pagamento da indenização por danos morais no valor de R$ 10.000,00, acrescido de juros e correção monetária. Publique-se. Registre-se. Intimem-se.';
+            } else if (tipo === 'citacao') {
+                document.getElementById('numero').value = '0802411-12.2024.8.15.0251';
+                document.getElementById('cliente').value = 'Carlos Alberto Souza';
+                document.getElementById('whatsapp').value = '5583988112233';
+                document.getElementById('movimentacao').value = 'Certifico e dou fé que expedido o mandado de citação e intimação da parte requerida, o qual foi devidamente cumprido por Oficial de Justiça. Abre-se o prazo legal de 15 (quinze) dias úteis para apresentação de resposta/contestação, querendo.';
             }
         }
 
         async function consultarDataJud() {
             const numero = document.getElementById('numero').value;
             const btn = document.getElementById('btn-cnj');
-            if (!numero) { alert('Digite o número do processo!'); return; }
+            if (!numero) { return; }
 
             btn.innerText = '⌛...';
             btn.disabled = true;
@@ -93,12 +95,9 @@
                 const data = await res.json();
                 if (res.ok) {
                     document.getElementById('movimentacao').value = data.ultimaMovimentacao;
-                    alert('Andamento capturado com sucesso!');
-                } else {
-                    alert(data.mensagem || 'Erro ao capturar.');
                 }
             } catch (e) {
-                alert('Erro de conexão.');
+                console.error(e);
             } finally {
                 btn.innerText = '🔍 Capturar CNJ';
                 btn.disabled = false;
@@ -108,7 +107,7 @@
         async function traduzirComIA() {
             const texto = document.getElementById('movimentacao').value;
             const btn = document.getElementById('btn-ia');
-            if (!texto) { alert('Insira ou capture um texto técnico primeiro!'); return; }
+            if (!texto) { return; }
 
             btn.innerText = '🤖 A traduzir com IA...';
             btn.disabled = true;
@@ -122,10 +121,9 @@
                 if (res.ok) {
                     document.getElementById('movimentacao').value = data.resumoTraduzido;
                     window.urgenciaTemp = data.urgencia;
-                    alert('Tradução concluída com sucesso!');
                 }
             } catch (e) {
-                alert('Erro ao traduzir.');
+                console.error(e);
             } finally {
                 btn.innerText = '🤖 Traduzir Juridiquês com IA para o Cliente';
                 btn.disabled = false;
@@ -142,11 +140,9 @@
                 const data = await res.json();
                 if (data.modo === 'DEEP_LINK') {
                     window.open(data.link, '_blank');
-                } else {
-                    alert('Notificação enviada em background com sucesso!');
                 }
             } catch (e) {
-                alert('Erro ao disparar notificação.');
+                console.error(e);
             }
         }
 
@@ -204,7 +200,7 @@
             const movimentacao = document.getElementById('movimentacao').value;
             const tenantId = document.getElementById('tenant-id').value;
 
-            if(!numero || !cliente) { alert('Preencha número e cliente!'); return; }
+            if(!numero || !cliente) { return; }
 
             const payload = {
                 id: Date.now().toString(),
@@ -224,7 +220,6 @@
             });
 
             if(res.ok) {
-                alert('Processo guardado com sucesso no escritório!');
                 document.getElementById('numero').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('whatsapp').value = '';
