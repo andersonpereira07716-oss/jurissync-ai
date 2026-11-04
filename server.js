@@ -12,8 +12,9 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqdnBhd2xpY2E=";
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
+const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 
-// 1. Registo de Novo Escritório (SaaS)
+// 1. Registo de Novo Escritório (SaaS) com Plano Inicial Gratuito/Solo
 app.post('/api/auth/registar', async (req, res) => {
     try {
         const { nomeEscritorio, email, senha } = req.body;
@@ -25,7 +26,7 @@ app.post('/api/auth/registar', async (req, res) => {
 
         const { data, error } = await supabase
             .from('escritorios')
-            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha }])
+            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha, plano: 'solo', status_assinatura: 'ativo' }])
             .select();
 
         if (error) {
@@ -62,14 +63,69 @@ app.post('/api/auth/login', async (req, res) => {
         return res.status(200).json({
             status: 'sucesso',
             tenantId: data.tenant_id,
-            nomeEscritorio: data.nome_escritorio
+            nomeEscritorio: data.nome_escritorio,
+            plano: data.plano || 'solo'
         });
     } catch (err) {
         return res.status(500).json({ error: 'Erro ao autenticar.' });
     }
 });
 
-// 3. Rota de Disparo Automático via WhatsApp
+// 3. Criar Pagamento Mercado Pago
+app.post('/api/saas/criar-pagamento', async (req, res) => {
+    try {
+        const { tenantId, plano, email } = req.body;
+        
+        const precos = {
+            'solo': 97.00,
+            'escritorio': 197.00,
+            'enterprise': 497.00
+        };
+
+        const valor = precos[plano] || 97.00;
+
+        if (!MP_ACCESS_TOKEN) {
+            // Se o token do Mercado Pago não estiver configurado, gera um link simulado/deep-link para testes
+            return res.status(200).json({
+                status: 'sucesso',
+                init_point: `https://api.whatsapp.com/send?phone=5583998765554&text=Olá! Quero ativar o plano ${plano.toUpperCase()} no JurisSync AI para o tenant ${tenantId}.`
+            });
+        }
+
+        const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                items: [{
+                    title: `JurisSync AI - Plano ${plano.toUpperCase()}`,
+                    quantity: 1,
+                    unit_price: valor
+                }],
+                payer: { email: email || 'cliente@advocacia.com' },
+                back_urls: {
+                    success: "https://jurissync-mvp.vercel.app?status=sucesso",
+                    failure: "https://jurissync-mvp.vercel.app?status=falha"
+                },
+                auto_return: "approved"
+            })
+        });
+
+        const mpData = await mpResponse.json();
+        
+        return res.status(200).json({
+            status: 'sucesso',
+            init_point: mpData.init_point
+        });
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// 4. Disparo Automático via WhatsApp
 app.post('/api/processos/notificar-whatsapp', async (req, res) => {
     try {
         const { telefone, cliente, numeroProcesso, mensagem } = req.body;
@@ -94,7 +150,7 @@ app.post('/api/processos/notificar-whatsapp', async (req, res) => {
     }
 });
 
-// 4. Tradução IA
+// 5. Tradução IA
 app.post('/api/processos/traduzir-ia', async (req, res) => {
     try {
         const { textoTecnico } = req.body;
@@ -123,7 +179,7 @@ app.post('/api/processos/traduzir-ia', async (req, res) => {
     }
 });
 
-// 5. Consulta DataJud
+// 6. Consulta DataJud
 app.post('/api/processos/consultar-cnj', async (req, res) => {
     try {
         const { numeroProcesso } = req.body;
@@ -158,7 +214,7 @@ app.post('/api/processos/consultar-cnj', async (req, res) => {
     }
 });
 
-// 6. Salvar Processos Isolados por Tenant
+// 7. Salvar Processos Isolados por Tenant
 app.post('/api/processos', async (req, res) => {
     try {
         const { id, numero, cliente, whatsapp, urgencia, status, historico, tenantId } = req.body;
@@ -185,7 +241,7 @@ app.post('/api/processos', async (req, res) => {
     }
 });
 
-// 7. Listar Processos estritamente do Escritório Logado
+// 8. Listar Processos estritamente do Escritório Logado
 app.get('/api/processos', async (req, res) => {
     try {
         const tenantId = req.query.tenantId;
