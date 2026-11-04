@@ -10,24 +10,62 @@ app.use(express.json());
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqdnBhd2xpY2E=";
+const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
+const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Rota de Tradução Inteligente com IA (Resumo Humanizado para o Cliente)
+// 1. Rota de Disparo Automático via API do WhatsApp
+app.post('/api/processos/notificar-whatsapp', async (req, res) => {
+    try {
+        const { telefone, cliente, numeroProcesso, mensagem } = req.body;
+
+        if (!telefone || !mensagem) {
+            return res.status(400).json({ error: 'Telefone e mensagem são obrigatórios.' });
+        }
+
+        const mensagemTexto = `Olá, ${cliente}! Segue a atualização do seu processo nº ${numeroProcesso}:\n\n"${mensagem}"\n\nQualquer dúvida, estamos à disposição!`;
+
+        // Se houver uma API de WhatsApp configurada nas variáveis de ambiente, dispara
+        if (WHATSAPP_API_URL && WHATSAPP_API_TOKEN) {
+            const apiRes = await fetch(WHATSAPP_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': WHATSAPP_API_TOKEN
+                },
+                body: JSON.stringify({
+                    number: telefone,
+                    text: mensagemTexto
+                })
+            });
+
+            if (!apiRes.ok) {
+                throw new Error(`Falha no Gateway de WhatsApp: status ${apiRes.status}`);
+            }
+
+            return res.status(200).json({ status: 'sucesso', modo: 'API_AUTOMATICO', mensagem: 'Mensagem enviada automaticamente!' });
+        }
+
+        // Caso ainda não haja API de gateway configurada, devolve o link formatado
+        const linkWhats = `https://api.whatsapp.com/send?phone=${telefone}&text=${encodeURIComponent(mensagemTexto)}`;
+        return res.status(200).json({ status: 'sucesso', modo: 'DEEP_LINK', link: linkWhats });
+
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Rota de Tradução Inteligente com IA
 app.post('/api/processos/traduzir-ia', async (req, res) => {
     try {
         const { textoTecnico } = req.body;
+        if (!textoTecnico) return res.status(400).json({ error: 'Texto técnico é obrigatório.' });
 
-        if (!textoTecnico) {
-            return res.status(400).json({ error: 'Texto técnico é obrigatório.' });
-        }
-
-        // Simulação avançada do Motor LLM jurídico (Podes conectar OpenAI/Gemini futuramente)
-        // Aqui geramos a tradução humanizada estruturada para o cliente
         let resumoCliente = "Houve uma nova movimentação importante no seu processo. A nossa equipa jurídica está a acompanhar de perto.";
         let urgenciaCalculada = "Média";
 
         const textoLower = textoTecnico.toLowerCase();
         if (textoLower.includes('sentença') || textoLower.includes('julgado') || textoLower.includes('procedente')) {
-            resumoCust = "O juiz proferiu uma decisão/sentença no seu processo. Temos novidades importantes sobre o desfecho da causa!";
+            resumoCliente = "O juiz proferiu uma decisão/sentença no seu processo. Temos novidades importantes sobre o desfecho da causa!";
             urgenciaCalculada = "Alta";
         } else if (textoLower.includes('citação') || textoLower.includes('intimados') || textoLower.includes('prazo')) {
             resumoCliente = "Recebemos uma nova intimação com prazos processuais que já estão a ser rigorosamente tratados pela nossa equipa.";
@@ -39,18 +77,13 @@ app.post('/api/processos/traduzir-ia', async (req, res) => {
             resumoCliente = `Foi registado um novo andamento oficial: "${textoTecnico}". O processo segue o seu ritmo normal.`;
         }
 
-        return res.status(200).json({
-            status: 'sucesso',
-            resumoTraduzido: resumoCliente,
-            urgencia: urgenciaCalculada
-        });
-
+        return res.status(200).json({ status: 'sucesso', resumoTraduzido: resumoCliente, urgencia: urgenciaCalculada });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
-// 2. Rota de Consulta Automática ao DataJud (CNJ)
+// 3. Rota de Consulta Automática ao DataJud (CNJ)
 app.post('/api/processos/consultar-cnj', async (req, res) => {
     try {
         const { numeroProcesso } = req.body;
@@ -92,7 +125,7 @@ app.post('/api/processos/consultar-cnj', async (req, res) => {
     }
 });
 
-// 3. Rota para salvar ou atualizar processos
+// 4. Rota para salvar ou atualizar processos
 app.post('/api/processos', async (req, res) => {
     try {
         const { id, numero, cliente, whatsapp, urgencia, status, historico } = req.body;
@@ -119,7 +152,7 @@ app.post('/api/processos', async (req, res) => {
     }
 });
 
-// 4. Rota para listar os processos
+// 5. Rota para listar os processos
 app.get('/api/processos', async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -135,4 +168,4 @@ app.get('/api/processos', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`JurisSync AI Backend v2.3 (AI Engine Active) na porta ${PORT}`));
+app.listen(PORT, () => console.log(`JurisSync AI Backend v3.0 (Background Disparos Active) na porta ${PORT}`));

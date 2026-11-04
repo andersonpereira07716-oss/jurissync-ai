@@ -10,12 +10,12 @@
     <div class="max-w-2xl mx-auto space-y-6">
         <header class="flex justify-between items-center border-b border-slate-800 pb-4">
             <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v2.3 IA Engine</span>
+            <span class="text-xs bg-emerald-950 text-emerald-300 px-2.5 py-1 rounded-full border border-emerald-800">v3.0 Background Dispatch</span>
         </header>
 
-        <!-- Formulário com IA e DataJud -->
+        <!-- Formulário -->
         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
-            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor Jurídico & IA</h2>
+            <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Tradutor Jurídico & Disparo</h2>
             
             <div class="flex gap-2">
                 <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
@@ -101,6 +101,24 @@
             }
         }
 
+        async function enviarNotificacaoBackground(telefone, cliente, numeroProcesso, mensagem) {
+            try {
+                const res = await fetch('/api/processos/notificar-whatsapp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telefone, cliente, numeroProcesso, mensagem })
+                });
+                const data = await res.json();
+                if (data.modo === 'DEEP_LINK') {
+                    window.open(data.link, '_blank');
+                } else {
+                    alert('Notificação enviada em background com sucesso!');
+                }
+            } catch (e) {
+                alert('Erro ao disparar notificação.');
+            }
+        }
+
         async function carregarProcessos() {
             try {
                 const res = await fetch('/api/processos');
@@ -123,9 +141,6 @@
                         });
                     }
 
-                    const msgWhats = encodeURIComponent(`Olá, ${p.cliente}! Segue a atualização do seu processo nº ${p.numero}:\n\n"${ultimaMov}"\n\nQualquer dúvida, estamos à disposição!`);
-                    const linkWhats = p.whatsapp ? `https://api.whatsapp.com/send?phone=${p.whatsapp}&text=${msgWhats}` : '#';
-
                     container.innerHTML += `
                         <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
                             <div class="flex justify-between items-start">
@@ -138,9 +153,9 @@
                             </div>
                             <div class="space-y-1">${historicoHtml}</div>
                             ${p.whatsapp ? `
-                                <a href="${linkWhats}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition-all shadow-md">
-                                    💬 Enviar Atualização via WhatsApp
-                                </a>
+                                <button onclick="enviarNotificacaoBackground('${p.whatsapp}', '${p.cliente}', '${p.numero}', '${ultimaMov.replace(/'/g, "\\'")}')" class="flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded-lg text-xs transition-all shadow-md">
+                                    🚀 Enviar Notificação WhatsApp (Background)
+                                </button>
                             ` : ''}
                         </div>
                     `;
@@ -175,7 +190,7 @@
             });
 
             if(res.ok) {
-                alert('Processo guardado e traduzido com sucesso!');
+                alert('Processo guardado e atualizado com sucesso!');
                 document.getElementById('numero').value = '';
                 document.getElementById('cliente').value = '';
                 document.getElementById('whatsapp').value = '';
