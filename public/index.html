@@ -13,6 +13,9 @@
         <div class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
             <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
+            <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] px-3 py-1 rounded-full font-semibold">
+                ✨ 3 Dias Grátis para Testar o Seu Escritório
+            </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
@@ -32,7 +35,7 @@
             <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
             <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Registar Escritório</button>
+            <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Começar 3 Dias Grátis</button>
         </div>
     </div>
 
@@ -42,6 +45,7 @@
             <div>
                 <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
                 <p id="label-escritorio" class="text-xs text-slate-400 font-medium"></p>
+                <p id="label-trial" class="text-[11px] text-amber-400 font-semibold mt-0.5"></p>
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="mostrarSecao('painel')" class="bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
@@ -104,7 +108,7 @@
         <div id="seccao-planos" class="space-y-6 hidden">
             <div class="text-center space-y-2">
                 <h2 class="text-xl font-bold text-amber-400">💎 Planos de Assinatura SaaS</h2>
-                <p class="text-xs text-slate-400">Escolha o plano ideal para impulsionar o seu escritório de advocacia.</p>
+                <p class="text-xs text-slate-400">Garanta acesso ilimitado após o seu período de teste grátis.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -148,9 +152,10 @@
     <script>
         let tenantAtual = localStorage.getItem('tenant_id') || null;
         let nomeEscritorioAtual = localStorage.getItem('nome_escritorio') || null;
+        let diasRestantesGlobal = localStorage.getItem('dias_restantes') || '3';
 
         if (tenantAtual) {
-            mostrarApp(nomeEscritorioAtual);
+            mostrarApp(nomeEscritorioAtual, diasRestantesGlobal);
         }
 
         function mudarModoAuth(modo) {
@@ -190,7 +195,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('Escritório registado com sucesso! Faça login.');
+                    alert('Escritório registado com 3 dias grátis! Faça login para começar.');
                     mudarModoAuth('login');
                 } else {
                     alert('Erro ao registar: ' + (data.error || 'Erro desconhecido.'));
@@ -220,9 +225,10 @@
                     localStorage.setItem('tenant_id', data.tenantId);
                     localStorage.setItem('nome_escritorio', data.nomeEscritorio);
                     localStorage.setItem('email_escritorio', email);
+                    localStorage.setItem('dias_restantes', data.diasRestantes);
                     tenantAtual = data.tenantId;
                     nomeEscritorioAtual = data.nomeEscritorio;
-                    mostrarApp(data.nomeEscritorio);
+                    mostrarApp(data.nomeEscritorio, data.diasRestantes);
                 } else {
                     alert('Erro no login: ' + (data.error || 'Credenciais inválidas.'));
                 }
@@ -231,12 +237,13 @@
             }
         }
 
-        function mostrarApp(nome) {
+        function mostrarApp(nome, dias) {
             document.getElementById('auth-container').classList.add('hidden');
             const app = document.getElementById('app-container');
             app.classList.remove('hidden');
             document.body.classList.remove('items-center', 'justify-center');
             document.getElementById('label-escritorio').innerText = `Escritório: ${nome}`;
+            document.getElementById('label-trial').innerText = `⏳ Período de Teste: ${dias} dia(s) restante(s)`;
             carregarProcessos();
         }
 
@@ -254,17 +261,16 @@
 
         async function assinarPlano(plano) {
             try {
-                const email = localStorage.getItem('email_escritorio') || '';
                 const res = await fetch('/api/saas/criar-pagamento', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tenantId: tenantAtual, plano, email })
+                    body: JSON.stringify({ plano })
                 });
                 const data = await res.json();
                 if (res.ok && data.init_point) {
                     window.open(data.init_point, '_blank');
                 } else {
-                    alert('Erro ao gerar checkout: ' + (data.error || 'Falha na resposta do gateway.'));
+                    alert('Erro ao gerar checkout.');
                 }
             } catch (e) {
                 alert('Erro de conexão ao processar pagamento.');
@@ -272,9 +278,7 @@
         }
 
         function terminarSessao() {
-            localStorage.removeItem('tenant_id');
-            localStorage.removeItem('nome_escritorio');
-            localStorage.removeItem('email_escritorio');
+            localStorage.clear();
             location.reload();
         }
 

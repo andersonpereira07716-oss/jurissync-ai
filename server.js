@@ -13,7 +13,7 @@ const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqd
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Registo de Novo Escritório (SaaS)
+// 1. Registo com 3 Dias Grátis
 app.post('/api/auth/registar', async (req, res) => {
     try {
         const { nomeEscritorio, email, senha } = req.body;
@@ -22,10 +22,19 @@ app.post('/api/auth/registar', async (req, res) => {
         }
 
         const tenantId = 'esc_' + Math.random().toString(36).substring(2, 9);
+        const dataCriacao = new Date().toISOString();
 
         const { data, error } = await supabase
             .from('escritorios')
-            .insert([{ tenant_id: tenantId, nome_escritorio: nomeEscritorio, email, senha, plano: 'solo', status_assinatura: 'ativo' }])
+            .insert([{ 
+                tenant_id: tenantId, 
+                nome_escritorio: nomeEscritorio, 
+                email, 
+                senha, 
+                plano: 'solo', 
+                status_assinatura: 'trial',
+                created_at: dataCriacao
+            }])
             .select();
 
         if (error) {
@@ -40,7 +49,7 @@ app.post('/api/auth/registar', async (req, res) => {
     }
 });
 
-// 2. Login de Escritório
+// 2. Login com Verificação de Dias de Teste Restantes
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
@@ -59,11 +68,18 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ error: 'E-mail ou palavra-passe inválidos.' });
         }
 
+        // Calcular dias restantes do trial (3 dias)
+        const dataCriacao = new Date(data.created_at || Date.now());
+        const agora = new Date();
+        const diffDias = Math.floor((agora - dataCriacao) / (1000 * 60 * 60 * 24));
+        const diasRestantes = Math.max(0, 3 - diffDias);
+
         return res.status(200).json({
             status: 'sucesso',
             tenantId: data.tenant_id,
             nomeEscritorio: data.nome_escritorio,
-            plano: data.plano || 'solo'
+            plano: data.plano || 'solo',
+            diasRestantes: diasRestantes
         });
     } catch (err) {
         return res.status(500).json({ error: 'Erro ao autenticar.' });
@@ -75,7 +91,6 @@ app.post('/api/saas/criar-pagamento', async (req, res) => {
     try {
         const { plano } = req.body;
         
-        // Mapeamento direto com os links oficiais do Mercado Pago fornecidos
         const linksPagamento = {
             'solo': 'https://mpago.la/2sd5VTS',
             'escritorio': 'https://mpago.la/15XTnEn',
