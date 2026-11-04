@@ -13,7 +13,7 @@ const DATAJUD_API_KEY = process.env.DATAJUD_API_KEY || "APIKey cjVwYXdsaWNhOmNqd
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 
-// 1. Registo com 3 Dias Grátis
+// 1. Registo de Novo Escritório (Com Validação e Tratamento Blindado)
 app.post('/api/auth/registar', async (req, res) => {
     try {
         const { nomeEscritorio, email, senha } = req.body;
@@ -24,12 +24,13 @@ app.post('/api/auth/registar', async (req, res) => {
         const tenantId = 'esc_' + Math.random().toString(36).substring(2, 9);
         const dataCriacao = new Date().toISOString();
 
+        // Tenta registar no Supabase
         const { data, error } = await supabase
             .from('escritorios')
             .insert([{ 
                 tenant_id: tenantId, 
                 nome_escritorio: nomeEscritorio, 
-                email, 
+                email: email.trim().toLowerCase(), 
                 senha, 
                 plano: 'solo', 
                 status_assinatura: 'trial',
@@ -39,17 +40,29 @@ app.post('/api/auth/registar', async (req, res) => {
 
         if (error) {
             console.error("Erro Supabase Registo:", error);
-            return res.status(400).json({ error: error.message || 'Erro ao guardar no Supabase.' });
+            // Fallback se a coluna created_at der problema
+            const { error: errFallback } = await supabase
+                .from('escritorios')
+                .insert([{ 
+                    tenant_id: tenantId, 
+                    nome_escritorio: nomeEscritorio, 
+                    email: email.trim().toLowerCase(), 
+                    senha
+                }]);
+
+            if (errFallback) {
+                return res.status(400).json({ error: errFallback.message || 'Erro ao criar conta no banco de dados.' });
+            }
         }
 
         return res.status(200).json({ status: 'sucesso', tenantId, nomeEscritorio });
     } catch (err) {
-        console.error("Erro Servidor Registo:", err);
-        return res.status(500).json({ error: err.message });
+        console.error("Erro no Servidor ao Registar:", err);
+        return res.status(500).json({ error: 'Erro interno ao registar: ' + err.message });
     }
 });
 
-// 2. Login com Verificação de Dias de Teste Restantes
+// 2. Login com Cálculo Seguro de Dias
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
@@ -57,22 +70,27 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: 'E-mail e senha obrigatórios.' });
         }
 
+        const emailFormatado = email.trim().toLowerCase();
+
         const { data, error } = await supabase
             .from('escritorios')
             .select('*')
-            .eq('email', email)
+            .eq('email', emailFormatado)
             .eq('senha', senha)
-            .single();
+            .maybeSingle();
 
         if (error || !data) {
-            return res.status(401).json({ error: 'E-mail ou palavra-passe inválidos.' });
+            return res.status(401).json({ error: 'E-mail ou senha inválidos.' });
         }
 
-        // Calcular dias restantes do trial (3 dias)
-        const dataCriacao = new Date(data.created_at || Date.now());
-        const agora = new Date();
-        const diffDias = Math.floor((agora - dataCriacao) / (1000 * 60 * 60 * 24));
-        const diasRestantes = Math.max(0, 3 - diffDias);
+        // Cálculo seguro de dias restantes (3 dias grátis)
+        let diasRestantes = 3;
+        if (data.created_at) {
+            const dataCriacao = new Date(data.created_at);
+            const agora = new Date();
+            const diffDias = Math.floor((agora - dataCriacao) / (1000 * 60 * 60 * 24));
+            diasRestantes = Math.max(0, 3 - diffDias);
+        }
 
         return res.status(200).json({
             status: 'sucesso',
@@ -82,7 +100,8 @@ app.post('/api/auth/login', async (req, res) => {
             diasRestantes: diasRestantes
         });
     } catch (err) {
-        return res.status(500).json({ error: 'Erro ao autenticar.' });
+        console.error("Erro no Servidor ao Fazer Login:", err);
+        return res.status(500).json({ error: 'Erro interno ao fazer login: ' + err.message });
     }
 });
 
@@ -245,4 +264,4 @@ app.get('/api/processos', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`JurisSync AI SaaS v5.0 na porta ${PORT}`));
+app.listen(PORT, () => console.log(`JurisSync AI SaaS v5.1 na porta ${PORT}`));
