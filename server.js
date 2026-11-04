@@ -14,7 +14,7 @@ const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL || "";
 const WHATSAPP_API_TOKEN = process.env.WHATSAPP_API_TOKEN || "";
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 
-// 1. Registo de Novo Escritório (SaaS) com Plano Inicial Gratuito/Solo
+// 1. Registo de Novo Escritório (SaaS)
 app.post('/api/auth/registar', async (req, res) => {
     try {
         const { nomeEscritorio, email, senha } = req.body;
@@ -71,7 +71,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// 3. Criar Pagamento Mercado Pago
+// 3. Criar Pagamento Mercado Pago (Ajustado)
 app.post('/api/saas/criar-pagamento', async (req, res) => {
     try {
         const { tenantId, plano, email } = req.body;
@@ -85,26 +85,31 @@ app.post('/api/saas/criar-pagamento', async (req, res) => {
         const valor = precos[plano] || 97.00;
 
         if (!MP_ACCESS_TOKEN) {
-            // Se o token do Mercado Pago não estiver configurado, gera um link simulado/deep-link para testes
             return res.status(200).json({
                 status: 'sucesso',
                 init_point: `https://api.whatsapp.com/send?phone=5583998765554&text=Olá! Quero ativar o plano ${plano.toUpperCase()} no JurisSync AI para o tenant ${tenantId}.`
             });
         }
 
+        // Email padrão válido aceito pelo Mercado Pago se o cliente não fornecer um email direto
+        const emailPayer = (email && email.includes('@')) ? email : 'cliente@jurissync.com.br';
+
         const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+                'Authorization': `Bearer ${MP_ACCESS_TOKEN.trim()}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 items: [{
                     title: `JurisSync AI - Plano ${plano.toUpperCase()}`,
                     quantity: 1,
+                    currency_id: 'BRL',
                     unit_price: valor
                 }],
-                payer: { email: email || 'cliente@advocacia.com' },
+                payer: {
+                    email: emailPayer
+                },
                 back_urls: {
                     success: "https://jurissync-mvp.vercel.app?status=sucesso",
                     failure: "https://jurissync-mvp.vercel.app?status=falha"
@@ -114,6 +119,11 @@ app.post('/api/saas/criar-pagamento', async (req, res) => {
         });
 
         const mpData = await mpResponse.json();
+
+        if (!mpResponse.ok || !mpData.init_point) {
+            console.error("Erro API Mercado Pago:", mpData);
+            return res.status(400).json({ error: mpData.message || mpData.error || 'Erro na API do Mercado Pago' });
+        }
         
         return res.status(200).json({
             status: 'sucesso',
@@ -121,6 +131,7 @@ app.post('/api/saas/criar-pagamento', async (req, res) => {
         });
 
     } catch (err) {
+        console.error("Erro interno ao gerar pagamento:", err);
         return res.status(500).json({ error: err.message });
     }
 });
