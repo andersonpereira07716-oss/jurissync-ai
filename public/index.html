@@ -6,149 +6,169 @@
     <title>JurisSync AI - Portal Jurídico SaaS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex items-center justify-center">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 flex flex-col items-center justify-between">
     
-    <!-- ECRÃ DE LOGIN / REGISTO -->
-    <div id="auth-container" class="w-full max-w-md bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
-        <div class="text-center space-y-2">
-            <h1 class="text-2xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-            <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
-            <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] px-3 py-1 rounded-full font-semibold">
-                ✨ 3 Dias Grátis (1 Teste por WhatsApp)
-            </div>
-        </div>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="w-full max-w-2xl my-auto space-y-6">
 
-        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-            <button onclick="mudarModoAuth('login')" id="btn-tab-login" class="py-2.5 rounded-lg bg-emerald-500 text-slate-950 transition-all font-bold">Entrar</button>
-            <button onclick="mudarModoAuth('registar')" id="btn-tab-registar" class="py-2.5 rounded-lg text-slate-400 transition-all">Criar Conta</button>
-        </div>
-
-        <!-- Formulário de Login -->
-        <div id="box-login" class="space-y-4">
-            <input type="email" id="login-email" placeholder="E-mail do Escritório" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <input type="password" id="login-senha" placeholder="Palavra-passe" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <button onclick="fazerLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Aceder ao Painel</button>
-        </div>
-
-        <!-- Formulário de Registo -->
-        <div id="box-registar" class="space-y-4 hidden">
-            <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <input type="text" id="reg-whatsapp" placeholder="WhatsApp do Escritório (5583...)" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
-            <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Começar 3 Dias Grátis</button>
-        </div>
-    </div>
-
-    <!-- PAINEL PRINCIPAL (Oculto até fazer login) -->
-    <div id="app-container" class="w-full max-w-2xl mx-auto space-y-6 hidden">
-        <header class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <div>
-                <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
-                <p id="label-escritorio" class="text-xs text-slate-400 font-medium"></p>
-                <p id="label-trial" class="text-[11px] text-amber-400 font-semibold mt-0.5"></p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="mostrarSecao('painel')" class="bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
-                    📋 Processos
-                </button>
-                <button onclick="mostrarSecao('planos')" class="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
-                    💎 Planos
-                </button>
-                <button onclick="terminarSessao()" class="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
-                    🚪 Sair
-                </button>
-            </div>
-        </header>
-
-        <!-- SECÇÃO DE PROCESSOS -->
-        <div id="seccao-painel" class="space-y-6">
-            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
-                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">⚡ Preenchimento Rápido (Testes)</span>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="preencherExemplo('sentenca')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
-                        📄 Exemplo: Sentença Procedente
-                    </button>
-                    <button onclick="preencherExemplo('citacao')" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
-                        📬 Exemplo: Citação / Prazo
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
-                <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Gestão & Automação de Processos</h2>
-                
-                <div class="flex gap-2">
-                    <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
-                    <button onclick="consultarDataJud()" id="btn-cnj" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all">
-                        🔍 Capturar CNJ
-                    </button>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <input type="text" id="cliente" placeholder="Nome do Cliente" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
-                    <input type="text" id="whatsapp" placeholder="WhatsApp (5583...)" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
-                </div>
-
-                <textarea id="movimentacao" placeholder="Cole ou capture o texto técnico do tribunal..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
-                
-                <button onclick="traduzirComIA()" id="btn-ia" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-semibold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
-                    🤖 Traduzir Juridiquês com IA para o Cliente
-                </button>
-
-                <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
-            </div>
-
-            <div class="space-y-3">
-                <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Timeline do Escritório</h3>
-                <div id="lista-processos" class="space-y-3"></div>
-            </div>
-        </div>
-
-        <!-- SECÇÃO DE PLANOS E ASSINATURA -->
-        <div id="seccao-planos" class="space-y-6 hidden">
+        <!-- ECRÃ DE LOGIN / REGISTO -->
+        <div id="auth-container" class="w-full max-w-md mx-auto bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
             <div class="text-center space-y-2">
-                <h2 class="text-xl font-bold text-amber-400">💎 Planos de Assinatura SaaS</h2>
-                <p class="text-xs text-slate-400">Garanta acesso ilimitado após o seu período de teste grátis.</p>
+                <h1 class="text-2xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
+                <p class="text-xs text-slate-400">Plataforma SaaS Multi-tenant para Advogados</p>
+                <div class="inline-block bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] px-3 py-1 rounded-full font-semibold">
+                    ✨ 3 Dias Grátis (1 Teste por WhatsApp)
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4 flex flex-col justify-between">
-                    <div class="space-y-2">
-                        <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded font-semibold">SOLO</span>
-                        <h3 class="text-xl font-bold text-slate-100">R$ 97<span class="text-xs text-slate-400">/mês</span></h3>
-                        <p class="text-xs text-slate-400">Até 50 processos ativos. Ideal para advogados independentes.</p>
-                    </div>
-                    <button onclick="assinarPlano('solo')" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-xs transition-all">
-                        Assinar Plano Solo
+            <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                <button onclick="mudarModoAuth('login')" id="btn-tab-login" class="py-2.5 rounded-lg bg-emerald-500 text-slate-950 transition-all font-bold">Entrar</button>
+                <button onclick="mudarModoAuth('registar')" id="btn-tab-registar" class="py-2.5 rounded-lg text-slate-400 transition-all">Criar Conta</button>
+            </div>
+
+            <!-- Formulário de Login -->
+            <div id="box-login" class="space-y-4">
+                <input type="email" id="login-email" placeholder="E-mail do Escritório" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <input type="password" id="login-senha" placeholder="Palavra-passe" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <button onclick="fazerLogin()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Aceder ao Painel</button>
+            </div>
+
+            <!-- Formulário de Registo -->
+            <div id="box-registar" class="space-y-4 hidden">
+                <input type="text" id="reg-nome" placeholder="Nome do Escritório de Advocacia" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <input type="email" id="reg-email" placeholder="E-mail de Acesso" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <input type="text" id="reg-whatsapp" placeholder="WhatsApp do Escritório (5583...)" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <input type="password" id="reg-senha" placeholder="Palavra-passe Segura" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-sm focus:border-emerald-500 outline-none">
+                <button onclick="fazerRegisto()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-xl transition-all shadow-lg shadow-emerald-500/10">Começar 3 Dias Grátis</button>
+            </div>
+        </div>
+
+        <!-- PAINEL PRINCIPAL (Oculto até fazer login) -->
+        <div id="app-container" class="w-full space-y-6 hidden">
+            <header class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <div>
+                    <h1 class="text-xl font-bold text-emerald-400">⚖️ JurisSync AI</h1>
+                    <p id="label-escritorio" class="text-xs text-slate-400 font-medium"></p>
+                    <p id="label-trial" class="text-[11px] text-amber-400 font-semibold mt-0.5"></p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="mostrarSecao('painel')" class="bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
+                        📋 Processos
+                    </button>
+                    <button onclick="mostrarSecao('planos')" class="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
+                        💎 Planos
+                    </button>
+                    <button onclick="terminarSessao()" class="bg-slate-900 hover:bg-slate-800 text-rose-400 border border-rose-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all">
+                        🚪 Sair
                     </button>
                 </div>
+            </header>
 
-                <div class="bg-slate-900 border border-amber-500/40 p-5 rounded-2xl space-y-4 flex flex-col justify-between relative shadow-lg shadow-amber-500/5">
-                    <div class="absolute -top-3 right-4 bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full">POPULAR</div>
-                    <div class="space-y-2">
-                        <span class="text-xs bg-amber-950 text-amber-300 px-2 py-1 rounded font-semibold border border-amber-800">ESCRITÓRIO PRO</span>
-                        <h3 class="text-xl font-bold text-slate-100">R$ 197<span class="text-xs text-slate-400">/mês</span></h3>
-                        <p class="text-xs text-slate-400">Até 300 processos. Multi-tenant e suporte prioritário.</p>
+            <!-- SECÇÃO DE PROCESSOS -->
+            <div id="seccao-painel" class="space-y-6">
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">⚡ Preenchimento Rápido (Testes)</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="preencherExemplo('sentenca')" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
+                            📄 Exemplo: Sentença Procedente
+                        </button>
+                        <button onclick="preencherExemplo('citacao')" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 p-2 rounded-lg text-xs font-semibold text-left transition-all">
+                            📬 Exemplo: Citação / Prazo
+                        </button>
                     </div>
-                    <button onclick="assinarPlano('escritorio')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all shadow-md">
-                        Assinar Escritório Pro
-                    </button>
                 </div>
 
-                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4 flex flex-col justify-between">
-                    <div class="space-y-2">
-                        <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded font-semibold">ENTERPRISE</span>
-                        <h3 class="text-xl font-bold text-slate-100">R$ 497<span class="text-xs text-slate-400">/mês</span></h3>
-                        <p class="text-xs text-slate-400">Processos ilimitados, IA avançada e API dedicada.</p>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-4">
+                    <h2 class="text-sm font-semibold text-emerald-400 uppercase tracking-wider">✨ Gestão & Automação de Processos</h2>
+                    
+                    <div class="flex gap-2">
+                        <input type="text" id="numero" placeholder="Número do Processo (CNJ)" class="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
+                        <button onclick="consultarDataJud()" id="btn-cnj" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all">
+                            🔍 Capturar CNJ
+                        </button>
                     </div>
-                    <button onclick="assinarPlano('enterprise')" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-xs transition-all">
-                        Assinar Enterprise
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="cliente" placeholder="Nome do Cliente" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
+                        <input type="text" id="whatsapp" placeholder="WhatsApp (5583...)" class="bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none">
+                    </div>
+
+                    <textarea id="movimentacao" placeholder="Cole ou capture o texto técnico do tribunal..." rows="3" class="w-full bg-slate-950 border border-slate-800 p-3 rounded-lg text-sm focus:border-emerald-500 outline-none"></textarea>
+                    
+                    <button onclick="traduzirComIA()" id="btn-ia" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-semibold py-2.5 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
+                        🤖 Traduzir Juridiquês com IA para o Cliente
                     </button>
+
+                    <button onclick="enviarProcesso()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold p-3 rounded-lg transition-all shadow-lg shadow-emerald-500/10">Salvar e Atualizar Processo</button>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">📁 Timeline do Escritório</h3>
+                    <div id="lista-processos" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- SECÇÃO DE PLANOS E ASSINATURA -->
+            <div id="seccao-planos" class="space-y-6 hidden">
+                <div class="text-center space-y-2">
+                    <h2 class="text-xl font-bold text-amber-400">💎 Planos de Assinatura SaaS</h2>
+                    <p class="text-xs text-slate-400">Garanta acesso ilimitado após o seu período de teste grátis.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded font-semibold">SOLO</span>
+                            <h3 class="text-xl font-bold text-slate-100">R$ 97<span class="text-xs text-slate-400">/mês</span></h3>
+                            <p class="text-xs text-slate-400">Até 50 processos ativos. Ideal para advogados independentes.</p>
+                        </div>
+                        <button onclick="assinarPlano('solo')" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-xs transition-all">
+                            Assinar Plano Solo
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 border border-amber-500/40 p-5 rounded-2xl space-y-4 flex flex-col justify-between relative shadow-lg shadow-amber-500/5">
+                        <div class="absolute -top-3 right-4 bg-amber-500 text-slate-950 text-[10px] font-bold px-2 py-0.5 rounded-full">POPULAR</div>
+                        <div class="space-y-2">
+                            <span class="text-xs bg-amber-950 text-amber-300 px-2 py-1 rounded font-semibold border border-amber-800">ESCRITÓRIO PRO</span>
+                            <h3 class="text-xl font-bold text-slate-100">R$ 197<span class="text-xs text-slate-400">/mês</span></h3>
+                            <p class="text-xs text-slate-400">Até 300 processos. Multi-tenant e suporte prioritário.</p>
+                        </div>
+                        <button onclick="assinarPlano('escritorio')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all shadow-md">
+                            Assinar Escritório Pro
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4 flex flex-col justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs bg-slate-800 text-slate-300 px-2 py-1 rounded font-semibold">ENTERPRISE</span>
+                            <h3 class="text-xl font-bold text-slate-100">R$ 497<span class="text-xs text-slate-400">/mês</span></h3>
+                            <p class="text-xs text-slate-400">Processos ilimitados, IA avançada e API dedicada.</p>
+                        </div>
+                        <button onclick="assinarPlano('enterprise')" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-bold py-2.5 rounded-xl text-xs transition-all">
+                            Assinar Enterprise
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
+
+    <!-- RODAPÉ PROFISSIONAL COM CANAIS DE ATENDIMENTO -->
+    <footer class="w-full max-w-2xl border-t border-slate-800 pt-4 pb-2 mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
+        <div>
+            <p>JurisSync AI © 2026 - Todos os direitos reservados.</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="https://wa.me/5583998765554?text=Olá! Vim através do JurisSync AI e preciso de suporte." target="_blank" class="hover:text-emerald-400 transition-all flex items-center gap-1 font-semibold text-emerald-500">
+                💬 WhatsApp: (83) 99876-5554
+            </a>
+            <a href="https://instagram.com" target="_blank" class="hover:text-amber-400 transition-all font-semibold text-slate-300">
+                📷 Instagram
+            </a>
+        </div>
+    </footer>
 
     <script>
         let tenantAtual = localStorage.getItem('tenant_id') || null;
